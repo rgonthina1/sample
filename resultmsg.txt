@@ -1,0 +1,1446 @@
+******************************************************************************************************
+									Diaplay all students enrolled for singleworkshop-----2ndsep2016
+									------------------------------------------------
+workshopdetailsAdd.jsp
+-----------------------
+<th>
+<i class="fa fa-users" aria-hidden="true"></i> Registraints 
+ </th>
+ 
+  <td> <a class="btn btn-primary" href="getRegistratesTopicsData.action?workshopCode=<s:property value="Code"/>&collegeName=<s:property value="CollegeName"/>">View</a></td>
+RegistraintsDetails.jsp
+-----------------------
+full has to keep
+
+general.xml
+------------
+<action name="getRegistratesTopicsData" class="com.mss.apcloud.DashBoard.DashBoardAction" method="getRegistratesTopicsData">
+            <result type="redirect" name="login">general/login.action</result>
+            <result>RegistraintsDetails.jsp</result>      
+           
+        </action>
+DashboardAction.java
+---------------------
+ private String profissionType;
+  //new one
+    private List registraintsDetailsList;
+    public String getRegistratesTopicsData() {
+          System.out.println("--getRegistratesTopicsData--in action----");
+        resultType = LOGIN;
+       // HttpSession session = servletRequest.getSession(false);
+        System.out.println("getRegistratesTopicsData" + getWorkshopCode());
+         try {
+         if (httpServletRequest.getSession(false).getAttribute(AppConstants.SESSION_ID) != null) {
+                resultType = "accessFailed";
+           
+                setRegistraintsDetailsList(ServiceLocator.getDashBoardService().getRegistratesTopicsData(getWorkshopCode()));
+                
+               
+                resultType = SUCCESS;
+            }
+            } catch (ServiceLocatorException ex) {
+                 ex.printStackTrace();
+            resultType = ERROR;
+            }
+             return resultType;
+        } 
+		
+DashboardService
+---------------
+public List getRegistratesTopicsData(String workshopCode) throws ServiceLocatorException;
+
+Dashboardserviceimpl
+---------------------
+ //new one
+    public List getRegistratesTopicsData(String workshopCode) throws ServiceLocatorException {
+        System.out.println("------------impl getRegistratesTopicsData----");
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        String response = "";
+        List registraintsWorkshopList = new ArrayList();
+
+        String profissionType = "";
+//        String query=" SELECT tblLKTopics.id AS TopicId,tblLKTopics.topicname, t1.workshopCode"
+//                + "  FROM tblLKTopics JOIN  tblEnrolledWorkshopTopics AS t1 ON (tblLKTopics.id=t1.enrollTopics) WHERE t1.registredId=" + userId +" ORDER BY t1.workshopCode";
+
+       // String query = " SELECT tblRegistrationDetails.id,CONCAT(FName,'.',LName) AS NAME,Email,PhoneNum,CollegeName,ProfessionType FROM tblEnrolledWorkshopTopics INNER JOIN tblRegistrationDetails ON (registredId=tblRegistrationDetails.id) LEFT OUTER JOIN tblLKCollegesList ON (College=tblLKCollegesList.Id) WHERE workshopCode = '" + workshopCode + "'";
+
+         String query = "SELECT DISTINCT(tblRegistrationDetails.id),CONCAT(FName,'.',LName) AS NAME,Email,PhoneNum,ProfessionType,CollegeName "
+                 + "FROM tblEnrolledWorkshopTopics  JOIN tblRegistrationDetails ON (tblRegistrationDetails.id=registredId)  LEFT OUTER JOIN tblLKCollegesList ON (College=tblLKCollegesList.Id) "
+                 + "WHERE tblEnrolledWorkshopTopics.workshopCode = '" +workshopCode+"'  GROUP BY tblRegistrationDetails.id";
+        
+        //        String query = "SELECT tblLKTopics.id AS TopicId,tblLKTopics.topicname,tblCurriculam.SubTopic,tblCurriculam.WorkshopCode AS workshopCode";
+//        query += " FROM tblLKTopics JOIN tblCurriculam ON (tblLKTopics.id=tblCurriculam.TopicID) WHERE tblLKTopics.STATUS='Active' ";
+//        query += " AND FIND_IN_SET(TopicId ,(SELECT CAST(GROUP_CONCAT(enrolledTopicsList SEPARATOR ',') AS CHAR)  FROM tblEnrolledWorkshopTopics ";
+//        query += " WHERE registredId=" + userId + " ))  AND FIND_IN_SET(workshopCode ,(SELECT CAST(GROUP_CONCAT(workshopcode SEPARATOR ',') AS CHAR)  FROM tblEnrolledWorkshopTopics ";
+//        query += " WHERE registredId=" + userId + " )) ORDER BY tblCurriculam.TopicId";
+        System.out.println("query ---->" + query);
+
+
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            resultSet = preparedStatement.executeQuery();
+            GeneralVTO generalVTO;
+            while (resultSet.next()) {
+                generalVTO = new GeneralVTO();
+                generalVTO.setName(resultSet.getString("NAME"));
+                generalVTO.setEmail(resultSet.getString("Email"));
+                System.out.println("------"+resultSet.getString("NAME")+""+resultSet.getString("Email")+""+resultSet.getString("PhoneNum")+""+resultSet.getString("CollegeName"));
+                generalVTO.setPhoneNum(resultSet.getString("PhoneNum"));
+                generalVTO.setCollegeName(resultSet.getString("CollegeName"));
+
+                
+                
+
+
+                if ("1".equals(resultSet.getString("ProfessionType"))) {
+                    profissionType = "Student";
+
+                } else if ("2".equals(resultSet.getString("ProfessionType"))) {
+                    profissionType = "Software";
+
+                } else if ("3".equals(resultSet.getString("ProfessionType"))) {
+                    profissionType = "Faculty";
+
+                } else if ("4".equals(resultSet.getString("ProfessionType"))) {
+                    profissionType = "Admin";
+
+                }
+                generalVTO.setProfissionType(profissionType);
+                System.out.println("------"+resultSet.getString("ProfessionType"));
+                registraintsWorkshopList.add(generalVTO);
+                
+                //response += resultSet.getString("id") + "@@@" + resultSet.getString("NAME") + "@@@" + resultSet.getString("Email") + "@@@" + resultSet.getString("PhoneNum") + "@@@" + resultSet.getString("CollegeName") + "@@@" + profissionType + "^^^";
+            }
+
+
+
+            System.err.println("Result----" + response);
+        } catch (SQLException sqle) {
+            throw new ServiceLocatorException(sqle);
+        } finally {
+            try {
+                if (resultSet != null) {
+
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                    preparedStatement = null;
+                }
+
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException sql) {
+                //System.err.print("Error :"+sql);
+            }
+
+        }
+        return registraintsWorkshopList;
+    }
+
+*************************************************************************************************************************	
+
+
+
+                                   for to display s/w in workshop----2ndsep2016 friday
+                                   -----------------------------
+
+spInnsertRegDetails1
+---------------------
+ `CompanyName`,
+ frmCollege,
+ 
+IF frmProfessionType = '2' THEN
+ UPDATE tblRegistrationDetails SET CompanyName=frmCollege WHERE id=maxId;
+ END IF;
+ impl
+ ------
+ public List getRegistratesTopicsData(String workshopCode) throws ServiceLocatorException {
+        System.out.println("------------impl getRegistratesTopicsData----");
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        String response = "";
+        List registraintsWorkshopList = new ArrayList();
+
+        String profissionType = "";
+//        String query=" SELECT tblLKTopics.id AS TopicId,tblLKTopics.topicname, t1.workshopCode"
+//                + "  FROM tblLKTopics JOIN  tblEnrolledWorkshopTopics AS t1 ON (tblLKTopics.id=t1.enrollTopics) WHERE t1.registredId=" + userId +" ORDER BY t1.workshopCode";
+
+      // String query = " SELECT tblRegistrationDetails.id,CONCAT(FName,'.',LName) AS NAME,Email,PhoneNum,CollegeName,ProfessionType FROM tblEnrolledWorkshopTopics INNER JOIN tblRegistrationDetails ON (registredId=tblRegistrationDetails.id) LEFT OUTER JOIN tblLKCollegesList ON (College=tblLKCollegesList.Id) WHERE workshopCode = '" + workshopCode + "'";
+
+        String query = "SELECT DISTINCT(tblRegistrationDetails.id),CONCAT(FName,'.',LName) AS NAME,Email,PhoneNum,ProfessionType,CollegeName,College "
+                + "FROM tblEnrolledWorkshopTopics  JOIN tblRegistrationDetails ON (tblRegistrationDetails.id=registredId)  LEFT OUTER JOIN tblLKCollegesList ON (College=tblLKCollegesList.Id) "
+                + "WHERE tblEnrolledWorkshopTopics.workshopCode = '" +workshopCode+"'  GROUP BY tblRegistrationDetails.id";
+        
+        //        String query = "SELECT tblLKTopics.id AS TopicId,tblLKTopics.topicname,tblCurriculam.SubTopic,tblCurriculam.WorkshopCode AS workshopCode";
+//        query += " FROM tblLKTopics JOIN tblCurriculam ON (tblLKTopics.id=tblCurriculam.TopicID) WHERE tblLKTopics.STATUS='Active' ";
+//        query += " AND FIND_IN_SET(TopicId ,(SELECT CAST(GROUP_CONCAT(enrolledTopicsList SEPARATOR ',') AS CHAR)  FROM tblEnrolledWorkshopTopics ";
+//        query += " WHERE registredId=" + userId + " ))  AND FIND_IN_SET(workshopCode ,(SELECT CAST(GROUP_CONCAT(workshopcode SEPARATOR ',') AS CHAR)  FROM tblEnrolledWorkshopTopics ";
+//        query += " WHERE registredId=" + userId + " )) ORDER BY tblCurriculam.TopicId";
+        System.out.println("query ---->" + query);
+
+
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            resultSet = preparedStatement.executeQuery();
+            GeneralVTO generalVTO;
+            while (resultSet.next()) {
+                generalVTO = new GeneralVTO();
+                generalVTO.setName(resultSet.getString("NAME"));
+                generalVTO.setEmail(resultSet.getString("Email"));
+                System.out.println("------"+resultSet.getString("NAME")+""+resultSet.getString("Email")+""+resultSet.getString("PhoneNum")+""+resultSet.getString("CollegeName"));
+                generalVTO.setPhoneNum(resultSet.getString("PhoneNum"));
+               // generalVTO.setCompanyName(resultSet.getString("CompanyName"));
+       
+                if ("1".equals(resultSet.getString("ProfessionType"))) {
+                    profissionType = "Student";
+                     generalVTO.setCollegeName(resultSet.getString("CollegeName"));
+
+                } else if ("2".equals(resultSet.getString("ProfessionType"))) {
+                    profissionType = "Software";
+                     generalVTO.setCollegeName(resultSet.getString("College"));
+
+                } else if ("3".equals(resultSet.getString("ProfessionType"))) {
+                    profissionType = "Faculty";
+                     generalVTO.setCollegeName(resultSet.getString("CollegeName"));
+
+                } else if ("4".equals(resultSet.getString("ProfessionType"))) {
+                    profissionType = "Admin";
+
+                }
+                generalVTO.setProfissionType(profissionType);
+                System.out.println("------"+resultSet.getString("ProfessionType"));
+                registraintsWorkshopList.add(generalVTO);
+                
+                //response += resultSet.getString("id") + "@@@" + resultSet.getString("NAME") + "@@@" + resultSet.getString("Email") + "@@@" + resultSet.getString("PhoneNum") + "@@@" + resultSet.getString("CollegeName") + "@@@" + profissionType + "^^^";
+            }
+
+
+
+            System.err.println("Result----" + response);
+        } catch (SQLException sqle) {
+            throw new ServiceLocatorException(sqle);
+        } finally {
+            try {
+                if (resultSet != null) {
+
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                    preparedStatement = null;
+                }
+
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException sql) {
+                //System.err.print("Error :"+sql);
+            }
+
+        }
+        return registraintsWorkshopList;
+    }
+	
+	
+	myprofile.jsp
+	------------
+	 <s:if test='%{professionType == "1"}'>
+     <div class="form-group" style="margin-top: 20px">
+     <label >College</label>
+      </div>
+      </s:if>
+										
+										
+										
+										
+										
+										
+	  <s:if test='%{professionType == "1"}'>
+      <div class="form-group">
+      <s:select  cssClass="form-control"  required="required" placeholder="College" id="college" list="collegeMap" value="%{collegeId}" name="collegeId" />
+        </div>
+       </s:if>									
+	
+
+*********************************************************************************************************************************
+
+                                          								college page at home page
+										  --------------------------
+generalvto
+------------
+private String website;
+
+
+RegistrationAaction.java
+--------------------
+ private String website;
+    private List collegeLocList;
+    
+    private String frmDesignation;
+    private String regFlag;
+
+getCollegeLis()
+collegeLocList = DataSourceDataProvider.getInstance().getCollegeAndLoc();
+
+getCollegeAndLoc()
+List collegeList = new ArrayList();
+GeneralVTO generalVTO=new GeneralVTO();
+               // colLis = colLis + resultSet.getInt("Id") + "|" + resultSet.getString("CollegeName") + "|" + resultSet.getString("Location") + " | " + resultSet.getString("Website") + "^";
+           
+                generalVTO.setId(resultSet.getInt("Id"));
+
+                generalVTO.setCollegeName(resultSet.getString("CollegeName"));
+
+
+                generalVTO.setLocation(resultSet.getString("Location"));
+                generalVTO.setWebsite(resultSet.getString("Website"));
+                collegeList.add(generalVTO);
+				
+				
+				
+generalserviceimpl
+-------------------
+cstatement = connection.prepareCall("call spInnsertRegDetails1(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+cstatement.setString(17, "");
+
+
+else if (registrationAction.getProfession().equals("2")) {
+                
+                    cstatement.setString(7, registrationAction.getFrmCompany());
+
+                    cstatement.setString(17, registrationAction.getFrmDesignation());
+                    cstatement.setString(9, "");
+                    System.out.println("FrmDesignation----" + registrationAction.getFrmDesignation());
+                
+            }				
+
+*************************************************************************************************************************************************************
+
+In loginAction -->
+ public String regLogin() {
+        // System.out.println("----regLogin----");
+      //  System.out.println("getResultMessage-->" + getResultMessage());
+        if (getResultMessage().equals("success")) {
+            getHttpServletRequest().setAttribute(AppConstants.RESULT_MESSAGE, "<div class='alert alert-success'><a class='close' data-dismiss='alert' href='#'>&times;</a><font color=\"green\" size=\"3.5\">Successfully Registered </font></div>");
+        }
+        // getHttpServletRequest().setAttribute(AppConstants.RESULT_MESSAGE, "<div class='alert alert-success'><a class='close' data-dismiss='alert' href='#'>&times;</a><font color='green' size='4.5'>Successfully Registered</font><div>");
+        return SUCCESS;
+    }
+	
+	
+	in RegAction:
+	
+	121 ; setResultMessage("success");
+	
+	
+	131 : setResultMessage("success");
+	
+	
+	
+	In loginAction
+	--------------
+	getHttpServletRequest().setAttribute(AppConstants.RESULT_MESSAGE, "<div class='alert alert-danger'><a class='close' data-dismiss='alert' href='#'>&times;</a><font color=\"red\" size=\"3.5\">Please Login with valid UserId and Password! </font></div>");
+
+	
+	login-page.jsp
+	---------------
+	<%
+                                        String noHTMLString = ""; 
+                                        if (request.getAttribute(AppConstants.RESULT_MESSAGE) != null) {
+                                            // out.println(request.getAttribute(AppConstants.RESULT_MESSAGE));
+
+                                            //   noHTMLString = request.getAttribute(AppConstants.RESULT_MESSAGE).toString().replaceAll("\\<.*?>","");
+                                            noHTMLString = request.getAttribute(AppConstants.RESULT_MESSAGE).toString();
+                                            out.println(noHTMLString);
+                                        }
+                                    %>
+									
+									
+									
+									
+									
+DSDP
+-----
+  /* 
+     * 
+     * college code exist or not
+     */
+    public String isCollegeCodeExistedOrNot(String code) throws ServiceLocatorException {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        String response = "";
+        //  String response = "";SELECT * FROM tblLkCollegesList1 WHERE CollegeCode="w03"
+
+        String query = "SELECT CollegeCode FROM tblLKCollegesList WHERE  CollegeCode='" + code + "'";
+         System.out.println("query-->"+query);
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            resultSet = preparedStatement.executeQuery();
+
+
+            if (resultSet.next()) {
+                response = "exist";
+
+                //  System.out.println("==="+resultSet.getString(1)+"==="+resultSet.getString(2));
+
+            }
+            if ("".equals(response) || response == null) {
+                response = "notexist";
+            }
+
+            //System.err.println("Result----"+sb);
+        } catch (SQLException sqle) {
+            throw new ServiceLocatorException(sqle);
+        } finally {
+            try {
+                if (resultSet != null) {
+
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                    preparedStatement = null;
+                }
+
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException sql) {
+                //System.err.print("Error :"+sql);
+            }
+
+        }
+        // System.out.println("response iscollegecode existed-->+response");
+        return response;
+    }
+
+
+
+AjaxHandlerAction.java
+----------------------
+String isColExist = DataSourceDataProvider.getInstance().isCollegeCodeExistedOrNot(getCollegeCode());
+                System.out.println("isColExist-->" + isColExist);
+                if (isColExist == "notexist") {
+                    code = generateCode(6);
+                    ServiceLocator.getAjaxHandlerService().getAddCollegeDet(getCollegeCode(), getCollegeName(), code, getLocation(), getLink(), email);
+                } else {
+                    code = "AlreadyExists";
+                }
+
+
+ajaxutil.js
+-----------
+ if(data=="AlreadyExists"){
+                document.getElementById("addCollegeMessg").innerHTML="<div class='cal-sm-3'>College Already Exists</div>";
+            }
+            else{
+            document.getElementById("addCollegeMessg").innerHTML='<div class="cal-sm-3">  Code Generated : '+data+'</div>';
+        }
+
+*****************************************************************************
+general.xml
+--------------
+ <action name="RegisterCoach" class="com.mss.apcloud.general.RegistrationAction" method="redirectCoachDetails"> 
+            <result>RegisterCoachDetails.jsp</result>
+        </action>
+        <action name="registerCoachDetalis" class="com.mss.apcloud.general.RegistrationAction" method="registerAsCoach">
+           <result>RegisterCoachDetails.jsp</result>
+            <result type="redirect" name="success">general/RegisterCoach.action?resultMessage=${resultMessage}</result>
+            <result type="redirect" name="emailExist">general/RegisterCoach.action</result>
+        </action>
+
+
+registrationAction.java
+------------------------
+ //new
+    private String name;
+    private String phone;
+    private String title;
+    private String companyName;
+    
+    private String areasOfExpertise;	
+
+
+  public String registerAsCoach() throws ServiceLocatorException {
+        System.out.println("---registerAsCoach--");
+        String resultMessage = "";
+        int updatedRows = 0;
+        System.out.println("here insert .registerAsCoach........");
+        try {
+             String userExist = ServiceLocator.getGeneralService().userExistanceInCoachDet(getEmail(), getPhone());
+            if (userExist.equals("noteixst")) {
+            
+            updatedRows = ServiceLocator.getGeneralService().insertRegisterCoachDetails(this);
+            
+            if (updatedRows > 0) {
+                setResultMessage("success");
+                resultType = SUCCESS;
+            }
+            
+            
+
+        }else {
+
+                setId(1);
+                setResultMessage("emailExist");
+                //    setResultMessage( "<font style='color:red;font-weight:bold;font-size:14px;'>Email or phone number alredy exist</font>");
+
+                //servletRequest.getSession(true).setAttribute(AppConstants.RESULT_MESSAGE, "<font style='color:red;font-weight:bold;font-size:14px;'>Email or phone number alredy exist</font>");
+                resultType = SUCCESS;
+
+            }
+
+        }catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return resultType;
+    }
+
+   public String redirectCoachDetails() {
+
+        if ("success".equals(getResultMessage())) {
+
+
+
+            servletRequest.setAttribute(AppConstants.RESULT_MESSAGE, "<div class='alert alert-success'><a class='close' data-dismiss='alert' href='#'>&times;</a><font color=\"green\" size=\"3.5\"><b>Successfully Registered</b> </font></div>");
+        }
+
+        return SUCCESS;
+    }
+
+
+generalservice
+---------------
+public int insertRegisterCoachDetails(RegistrationAction registrationAction) throws ServiceLocatorException;
+public String userExistanceInCoachDet(String email, String phone) throws ServiceLocatorException;
+generalserviceimpl
+-------------------
+public int insertRegisterCoachDetails(RegistrationAction registrationAction) throws ServiceLocatorException {
+      System.out.println("herte---------insertRegisterCoachDetails----------");
+
+        String result="";
+        int updatedRows = 0; 
+        Connection connection = null;
+        PreparedStatement preparedStatement=null;
+        
+        
+       
+       try{
+           
+        
+            connection = ConnectionProvider.getInstance().getConnection();
+           
+            preparedStatement = connection.prepareStatement("INSERT INTO tblCoachDetails(NAME,Email,Title,PhoneNumber,NameofExistingCompany,AreasOfExpertise) VALUES(?,?,?,?,?,?) ");
+            preparedStatement.setString(1,registrationAction.getName());
+            System.out.println("----name-----"+registrationAction.getName());
+            
+             preparedStatement.setString(2, registrationAction.getEmail());  
+             System.out.println("----email-----"+registrationAction.getEmail());
+             preparedStatement.setString(3, registrationAction.getTitle());
+             preparedStatement.setString(4, registrationAction.getPhone());
+             preparedStatement.setString(5, registrationAction.getCompanyName());
+             preparedStatement.setString(6, registrationAction.getAreasOfExpertise());
+            
+             updatedRows=preparedStatement.executeUpdate();
+             
+           System.out.println("---updatedRows---"+updatedRows);
+           
+       }catch (SQLException se){
+           se.printStackTrace();
+           // throw new ServiceLocatorException(se);
+        }finally{
+            try{
+              
+                if(preparedStatement != null){
+                    preparedStatement.close();
+                    preparedStatement = null;
+                }
+                if(connection != null){
+                    connection.close();
+                    connection = null;
+                }
+            }catch (SQLException se){
+                throw new ServiceLocatorException(se);
+            }
+        }
+        
+        return updatedRows;
+    }
+
+public String userExistanceInCoachDet(String email,String phone) throws ServiceLocatorException{
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        String response = "noteixst";
+        String query = "SELECT Email,phoneNumber FROM tblCoachDetails WHERE Email='"+email+"' OR phoneNumber='"+phone+"'" ;
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            resultSet = preparedStatement.executeQuery();
+
+
+            if (resultSet.next()) {
+               response="exist";
+
+              //  System.out.println("==="+resultSet.getString(1)+"==="+resultSet.getString(2));
+
+            }
+           
+
+            //System.err.println("Result----"+sb);
+        } catch (SQLException sqle) {
+            throw new ServiceLocatorException(sqle);
+        } finally {
+            try {
+                if (resultSet != null) {
+
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                    preparedStatement = null;
+                }
+
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException sql) {
+                //System.err.print("Error :"+sql);
+            }
+
+        }
+    return response;
+    }
+
+home.jsp
+-------
+   <a href="general/RegisterCoach.action"  class="linkText"><button style="width:195px" class="btn  col-sm-3" id="btnSubmit" name="btnSubmit" tabindex="12" type="submit"><font class="black" color="#000">Register As A Coach</font></button></a>
+
+RegisterCoachDetails.jsp
+-------------------------
+full has to give
+
+validation.js
+----------------
+function CoatchDetailsValidation()
+{
+    // alert("here111");
+    //  &&formatPhone('workPhone')&&passwordValidation()
+    //alert($('#workPhone').val());
+    if($('#name').val()==""||$('#name').val()==null)
+    {
+        showAlertModal("Enter name");
+           
+        $('#name').css("border", "1px solid red");
+            
+        return false;
+    }
+    if($('#email').val()==""||$('#email').val()==null)
+    {
+        showAlertModal("Enter email address");
+        $('#email').css("border", "1px solid red");
+         $('#email').focus();
+        return false;
+    }
+    if($('#title').val()==""||$('#title').val()==null)
+    {
+        showAlertModal("Enter title");
+        $('#title').css("border", "1px solid red");
+       
+        return false;
+    }
+    if($('#companyName').val()==""||$('#companyName').val()==null)
+    {
+        showAlertModal("Enter companyName");
+        $('#companyName').css("border", "1px solid red");
+        $('#companyName').focus();
+        return false;
+    }
+    if($('#phone').val()==""||$('#phone').val()==null)
+    {
+        showAlertModal("Enter Phone number");
+        $('#phone').css("border", "1px solid red");
+        $('#phone').focus();
+        return false;
+    }
+    
+    if($('#areasOfExpertise').val()==""||$('#areasOfExpertise').val()==null)
+    {
+        showAlertModal("Enter areasOfExpertise");
+        $('#areasOfExpertise').css("border", "1px solid red");
+        //$('#companyName').focus();
+        return false;
+    }
+
+function fieldLengthValidator()
+--------------------
+element.id== "title" ---40
+
+element.id=="name" || element.id=="companyName"----60
+if(element.id=="areasOfExpertise")
+    {
+      
+     i=1500;   
+    }
+
+
+*******************************************************************************************************************
+                                                    search the values and edit the coach vallues in registrCoach
+						-------------------------------------------------------------------			
+RegisterCoachSearch.jsp
+-------------------------
+full has to copy
+
+general.xml
+-----------
+<action name="registredCoachDetailsSearch" class="com.mss.apcloud.DashBoard.DashBoardAction" method="registredCoachDetailsSearch">
+            <result type="redirect" name="login">general/login.action</result>
+            <result>RegisterCoachSearch.jsp</result>      
+            <result type="redirect" name="accessFailed">general/accessFailed.action</result>
+        </action>
+
+DashboardACtion.java
+--------------------
+//new registercoach at leftmenu
+    private List coachDetailsList;
+    private String title;
+    private String companyName;
+    private String areasOfExpertise;
+    
+
+    public String registredCoachDetailsSearch() {
+        System.out.println("--registredCoachDetailsSearch--in action----");
+        resultType = LOGIN;
+        try {
+            if (httpServletRequest.getSession(false).getAttribute(AppConstants.SESSION_ID) != null) {
+                resultType = "accessFailed";
+                //   if (AuthorizationManager.getInstance().isAuthorizedUser("COLLEGE_ADD_EDIT", Integer.parseInt(httpServletRequest.getSession(false).getAttribute(AppConstants.SESSION_PROFESSION_TYPE).toString()))) {
+
+                setCoachDetailsList(ServiceLocator.getDashBoardService().registredCoachDetailsSearch(getName(), getTitle(), getCompanyName(), getAreasOfExpertise(), getStatus() ,getFrmDate(), getToDate()));
+                //  httpServletRequest.getSession(false).setAttribute(AppConstants.SESSION_COLLEGELIST, getCollegeMenuList());
+                resultType = SUCCESS;
+                //  }
+            }
+        } catch (ServiceLocatorException ex) {
+            ex.printStackTrace();
+            resultType = ERROR;
+        }
+        return resultType;
+    }
+
+
+
+dashboardservice
+---------------
+public List registredCoachDetailsSearch(String name,String title,String companyName,String areaOfExpertise,String status,String frmDate, String toDate) throws ServiceLocatorException;  
+
+dashboardserviceimpl
+--------------------
+  //new coach details
+    public List registredCoachDetailsSearch(String name,String title,String companyName,String areaOfExpertise,String status,String frmDate, String toDate) throws ServiceLocatorException {
+        System.out.println("--registredCoachDetailsSearch--");
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        String response = "";
+        List regCoachList = new ArrayList();
+
+
+        //Id NAME  phoneNumber Title NameofExistingCompany AreasOfExpertise
+        String query = "SELECT Id,NAME,phoneNumber,Title,NameofExistingCompany,AreasOfExpertise,STATUS,CreatdeDate,ModifiedDate FROM tblCoachDetails where 1=1";
+        if (frmDate != null && !"".equals(frmDate)) {
+            query += (" AND CreatdeDate >= '" + DateUtility.getInstance().convertStringToMySQLDate(frmDate) + "' ");
+            // query += (" OR ModifiedDate >= '" + DateUtility.getInstance().convertStringToMySQLDate(frmDate) + "' ");
+
+        }
+        if (toDate != null && !"".equals(toDate)) {
+            query += (" AND CreatdeDate <= '" + DateUtility.getInstance().convertStringToMySQLDate(toDate) + "' ");
+            //query += (" OR ModifiedDate <= '" + DateUtility.getInstance().convertStringToMySQLDate(toDate) + "' ");
+
+        }
+
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            resultSet = preparedStatement.executeQuery();
+            GeneralVTO generalVTO;
+            while (resultSet.next()) {
+                generalVTO = new GeneralVTO();
+
+
+
+                //  generalVTO.setDATE(DateUtility.getInstance().convertToviewFormat(resultSet.getDate("DATE").toString()));
+                 generalVTO.setId(resultSet.getInt("Id"));
+                generalVTO.setName(resultSet.getString("NAME"));
+                System.out.println("--name---"+resultSet.getString("NAME"));
+                generalVTO.setPhoneNum(resultSet.getString("phoneNumber"));
+                System.out.println("--name---"+resultSet.getString("phoneNumber"));
+
+                generalVTO.setTitle(resultSet.getString("Title"));
+                System.out.println("--name---"+resultSet.getString("Title"));
+                generalVTO.setCompanyName(resultSet.getString("NameofExistingCompany"));
+                System.out.println("--companyname---"+resultSet.getString("NameofExistingCompany"));
+                generalVTO.setAreasOfExpertise(resultSet.getString("AreasOfExpertise"));
+                generalVTO.setStatus(resultSet.getString("STATUS"));
+                generalVTO.setFrmDate(resultSet.getString("CreatdeDate"));
+
+                System.out.println("--name---"+resultSet.getString("CreatdeDate"));
+
+                generalVTO.setToDate(resultSet.getString("ModifiedDate"));
+
+
+
+
+                //    response = resultSet.getInt("Id") + "" + resultSet.getString("CollegeName") + "" + resultSet.getString("Website");
+
+                regCoachList.add(generalVTO);
+
+            }
+        } catch (SQLException sqle) {
+            throw new ServiceLocatorException(sqle);
+        } finally {
+            try {
+                if (resultSet != null) {
+
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                    preparedStatement = null;
+                }
+
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException sql) {
+                //System.err.print("Error :"+sql);
+            }
+
+        }
+        return regCoachList;
+    }
+
+
+GeneralVTO.java
+--------------
+ //new coach
+    private String title;
+    private String companyName;
+    private String areasOfExpertise;
+
+
+
+ajax.xml
+--------
+<action name="editCoachDetils" class="com.mss.apcloud.ajax.AjaxHandlerAction" method="editCoachDetils"/>
+
+
+ajaxAction.java
+--------------
+  //edit coach details
+    private String name;
+    private String title;
+    private String companyName;
+    private String areaOfExpertise;
+    private String status;
+    private int id;
+    public void editCoachDetils() {
+        HttpSession session = servletRequest.getSession(false);
+
+
+        if (session.getAttribute(AppConstants.SESSION_EMAIL) != null) {
+            try {
+                String email = session.getAttribute(AppConstants.SESSION_EMAIL).toString();
+               // String code = generateCode(6);
+                ServiceLocator.getAjaxHandlerService().editCoachDetils(getId(),getName(), getTitle(), getCompanyName(), getAreaOfExpertise(), getStatus(),email);
+                servletResponse.setContentType("text");
+                servletResponse.getWriter().write("success");
+
+            } catch (Exception ex) {
+            }
+        }
+
+    }
+
+
+ajaxservice.java
+----------------
+public String editCoachDetils(int id,String name,String title,String companyName,String areaOfExpertise,String status,String email) throws ServiceLocatorException;
+
+ajaxserviceimpl.java
+-------------------------
+public String editCoachDetils(int id,String name, String title, String companyName, String areaOfExpertise, String status, String email) throws ServiceLocatorException {
+
+        System.out.println("editCoachDetils-------------start");
+
+
+        String result = "";
+        String query = "";
+        int updatedRows = 0;
+        Connection connection = null;
+        PreparedStatement pstatement = null;
+        ResultSet resultSet = null;
+        try {
+
+            connection = ConnectionProvider.getInstance().getConnection();
+            //UPDATE tblLkCollegesList1 SET  CollegeName="nitss" ,Website= "www.nitss.com"  WHERE WCode="w05"
+
+            query = "UPDATE tblCoachDetails SET  NAME='" + name + "' ,Title='" + title + "' ,NameofExistingCompany='" + companyName + "' ,AreasOfExpertise='" + areaOfExpertise + "' ,STATUS='" + status + "' ,ModifiedBy='" + email + "' WHERE Id ='" + id + "'";
+            System.out.println("--->" + query);
+            pstatement = connection.prepareStatement(query);
+
+
+            updatedRows = pstatement.executeUpdate();
+
+            if (updatedRows > 0) {
+                result = "success";
+            }
+
+
+
+
+        } catch (SQLException se) {
+            throw new ServiceLocatorException(se);
+        } finally {
+            try {
+                if (resultSet != null) {
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (pstatement != null) {
+                    pstatement.close();
+                    pstatement = null;
+                }
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException se) {
+                throw new ServiceLocatorException(se);
+            }
+        }
+
+        return result;
+    }
+
+
+
+ajaxutil.js
+----------
+//edit coach details
+function setCoachDet(name,title,companyName,areasOfExpertise,status,id){
+   
+    document.getElementById("name").value=name;
+ 
+    document.getElementById("title").value=title;
+    document.getElementById("companyName").value=companyName;
+   
+    document.getElementById("areaOfExpertise").value=areasOfExpertise;
+    document.getElementById("status").value=status;
+    document.getElementById("id").value=id;
+
+}
+
+function editCoachDetils()
+{
+    
+    var name=document.getElementById("name").value;
+      var title=document.getElementById("title").value;
+      var companyName=document.getElementById("companyName").value;
+      var areaOfExpertise=document.getElementById("areaOfExpertise").value;
+      var status=document.getElementById("status").value;
+    var id=document.getElementById("id").value;
+      if(name.length>0&&title.length>0&&companyName.length>0&&areaOfExpertise.length>0&&status.length>0)
+    {
+        $("#edit").button('loading');
+        $.ajax(
+        {
+            type : 'post',
+						
+            url : 'ajax/editCoachDetils.action?name='+name+'&title='+title+'&companyName='+companyName+'&areaOfExpertise='+areaOfExpertise+'&status='+status+'&id='+id,
+            async: false,
+						
+            timeout : 60000
+        }).success(function(data) {
+            //alert('success'+data);
+            document.getElementById("resultMessg1").style.display='block';
+            document.getElementById("editCoachmessg1").innerHTML='<div class="cal-sm-3">  Updated  :  '+data+'</div>';
+        }).error(function(x, t, m) {
+            if (t == "timeout") {
+            alert("time-->" + t);
+            } else {
+                alert("elese part timer");
+            }
+        });
+        $("#edit").button('reset');
+    }else
+    {
+        document.getElementById("resultMessg1").style.display='block';
+        document.getElementById("editCoachmessg1").innerHTML='<div class="cal-sm-12"> Please enter mandatory fields </div>';
+    }
+    
+}
+
+
+function reloadPageCoach()
+{
+    window.location='registredCoachDetailsSearch.action';
+}
+
+
+ajaxutil.js
+------------
+//area of expertise in register coach
+function getAreaOfExpertiseDeta(areasOfExpertise)
+{
+    document.getElementById("areaOfExpertiseInModal").innerHTML=areasOfExpertise;
+}
+
+
+
+
+********************************************************
+myprofile.jsp
+---------------
+disable=true has to remove
+
+<div class="form-group">
+ <s:select  cssClass="form-control"  required="required" placeholder="College" id="college" list="collegeMap" value="%{collegeId}" name="collegeId" />
+</div>
+
+<div class="form-group">
+  <s:textfield type="text" cssClass="form-control" disabled="true"  required="required" placeholder="Email" id="email" name="email" />
+ </div>
+
+DashboardAcion.java
+-----------------
+getMyProfile()
+----------------
+collegeMap = DataSourceDataProvider.getInstance().getCollegeNames();
+dashboardAction
+---------------
+
+updateDetails()
+-----------------
+httpServletRequest.getSession(false).setAttribute(AppConstants.SESSION_COLLEGEID, getCollegeId());
+email in comment
+
+
+dashboardimpl.java
+-----------------
+updateDetails()----full method replace
+------------------
+query = "UPDATE tblRegistrationDetails SET  Email='" + dashBoardAction.getEmail() + "' ,PhoneNum='" + dashBoardAction.getPhoneNumber() + "' ,College='" + dashBoardAction.getCollegeId() + "'   WHERE id=" + i1;
+
+
+**************************************************************************************************************
+                                      add job details
+-------------------------------------------------------------------
+171--style="margin-top: 20px"
+email----disabled="true"
+myprofile.jsp
+---------------
+209--227
+ <div class="row">
+  <div class="col-sm-12" style="margin-left: 18px">
+    <h3 class="heavy">Job Details</h3>
+    </div> </div>
+  <div class="col-sm-3">
+  <div class="form-group" style="margin-top: 15px">
+  <label  >Compay&nbsp;Name</label></div>
+ <div class="form-group" style="margin-top: 15px">
+   <label >Salary</label></div> 
+  </div>
+  <div class="col-sm-5">
+      <div class="form-group">
+    <s:textfield type="text" cssClass="form-control"  required="required" placeholder="Company Name" id="companyName" name="companyName" />
+     </div>
+      <div class="form-group">
+     <s:textfield type="text" cssClass="form-control"  required="required" placeholder="Salary" id="salary" name="salary" />
+          </div> 
+       </div>
+
+*************************
+registration-form.jsp
+----------------------
+style="display: none"
+<option value="5">Others</option>
+
+ <div class="col-sm-3" id="collegeDiv" style="display: none">
+                                <div class="form-group">
+
+                                    <s:textfield cssClass="form-control" placeholder="College Name*" id="otherCollegeName" name="otherCollegeName" onchange="borderCssChange(this);fieldLengthValidator(this);"/>
+
+                                </div>
+                            </div>
+
+******************
+
+<div class="col-sm-3" id="yearOfPassDiv" style="display: none">
+                                <div class="form-group">
+
+                                    <s:textfield cssClass="form-control" placeholder="Year Of Pass*" id="yearOfPass" name="yearOfPass" onchange="borderCssChange(this);fieldLengthValidator(this);"/>
+
+                                </div>
+                            </div> 	
+
+*******************
+<div class="col-sm-3">
+                                <div class="form-group">
+                                    <s:textfield cssClass="form-control" placeholder="FaceBook Profile*" name="facebookProfile" id="facebookProfile" required="required"  onchange="borderCssChange(this);fieldLengthValidator(this);" />
+                                </div>
+                            </div>
+
+*************************
+
+	id="branchdiv"
+	id="branchOtherDiv"
+	id="yeardiv"
+	
+**********************
+validation.js
+-----------
+
+ 
+    var prof=document.getElementById("profession").value;
+    // alert(prof);
+    var collegeIdHidden=document.getElementById("collegeIdHidden").value;
+    //var year=document.getElementById("year").value;
+    // alert(prof);
+
+    document.getElementById("branch").value="-1";
+    if(collegeIdHidden!=null && collegeIdHidden!=""){
+      
+        document.getElementById("studentDiv").style.display="block";
+        document.getElementById("profession").value=1;
+    }
+    else{
+      
+        if(prof=="-1"){    
+            document.getElementById("studentDiv").style.display="none";
+            document.getElementById("employeeDiv").style.display="none";
+            document.getElementById("branchdiv").style.display="none";
+            document.getElementById("yeardiv").style.display="none";
+            document.getElementById("facebookProfile").style.display="none";
+        }
+        else if(prof=="1")
+        {
+             document.getElementById("collegeDiv").style.display="none";
+            document.getElementById("yearOfPassDiv").style.display="none";
+            document.getElementById("employeeDiv").style.display="none";
+            document.getElementById("studentDiv").style.display="block";
+            document.getElementById("yeardiv").style.display="block";
+            document.getElementById("branchdiv").style.display="block";
+           
+            document.getElementById("facebookProfile").style.display="block";
+            
+            
+            
+        }
+        else if(prof=="5")
+        {
+            document.getElementById("studentDiv").style.display="none"; 
+            document.getElementById("employeeDiv").style.display="none";
+            document.getElementById("yeardiv").style.display="none"; 
+            
+            document.getElementById("collegeDiv").style.display="block";
+            document.getElementById("yearOfPassDiv").style.display="block";
+            document.getElementById("branchdiv").style.display="block";
+            document.getElementById("facebookProfile").style.display="block";
+              
+        
+        }
+        else
+        {
+            document.getElementById("studentDiv").style.display="none";
+            document.getElementById("employeeDiv").style.display="block";  
+            document.getElementById("yeardiv").style.display="none";  
+            document.getElementById("branchdiv").style.display="none";
+            document.getElementById("branchOtherDiv").style.display="none";
+            document.getElementById("collegeDiv").style.display="none";
+            document.getElementById("facebookProfile").style.display="block";
+    
+    }
+}
+}
+
+******************************
+
+general service impl
+-----------------------
+insertRegdetails()
+------------------
+  cstatement = connection.prepareCall("call spInsertRegDetails(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"); 
+                   
+                            cstatement.setString(1,registrationAction.getFirstname());
+                            cstatement.setString(2,registrationAction.getLastname());
+                            cstatement.setString(3,registrationAction.getEmail());
+                            cstatement.setString(4,PasswordUtility.encryptPwd(registrationAction.getPassword()));
+                            cstatement.setString(5,registrationAction.getWorkPhone());
+                            cstatement.setString(6,registrationAction.getProfession());
+                            if(registrationAction.getProfession().equals("1")){
+                            cstatement.setString(7,registrationAction.getFrmCollege());
+                            
+                            }
+                             else if(registrationAction.getProfession().equals("5")){
+                               registrationAction.setYear(registrationAction.getYearOfPass());
+                            cstatement.setString(7,registrationAction.getOtherCollegeName());
+                                 System.out.println("-getOtherCollegeName---"+registrationAction.getOtherCollegeName());
+                                 
+                            }
+                            
+                            else 
+                            {
+                                cstatement.setString(7,registrationAction.getFrmCompany());
+                            }
+                            //
+                            
+                            //
+                            
+                            cstatement.setString(8,registrationAction.getFacebookProfile()); //8 facebook link icchava?hmm
+                            System.out.println("----faceB----"+registrationAction.getFacebookProfile());
+                             if(registrationAction.getBranch().equals("Others")){ 
+                            cstatement.setString(9,registrationAction.getFrmOtherBranch());
+                            
+                            }else
+                            {
+                                cstatement.setString(9,registrationAction.getBranch());
+                            }
+                           
+                           
+                            cstatement.setString(10,registrationAction.getYear());  
+                            cstatement.setString(11,registrationAction.getStreet());
+                            cstatement.setString(12,registrationAction.getCity());
+                            cstatement.setString(13,registrationAction.getDistrict());
+                            cstatement.setString(14,registrationAction.getZipcode());
+                            cstatement.setString(15,registrationAction.getState());
+                            cstatement.setTimestamp(16,DateUtility.getInstance().getCurrentMySqlDateTime());
+                            cstatement.registerOutParameter(17, Types.INTEGER);
+                           
+                             cstatement.executeUpdate();
+                            updatedRows = cstatement.getInt(17);
+                            System.out.println("updatedRows-->"+updatedRows);
+                      if(updatedRows>0)
+                      {
+                          registrationAction.setRegisteredId(cstatement.getInt(17));
+
+
+******************************
+for ph num
+--------
+//adding +91 before giving the phone number
+function newFormatPhone(element){
+    // var res = str.substring(3);
+   
+    if((element.value).length==10){
+        str=new String((element.value));
+    }
+    else{
+        str=new String((element.value).substring(3));
+    }
+    //  alert(str);
+    element.value=str.replace(/[A-Za-z\(\)\.\-\x\s,]/g,"");
+    // alert(element.value);
+    num=element.value;
+    var _return="+91";
+    if(num.length==10){
+        _return+="(";
+        var ini=num.substring(0,3);
+        _return+=ini+")";
+        var st=num.substring(3,6);
+        _return+="-"+st+"-";
+        var end=num.substring(6,10);
+        _return+=end;
+        element.value="";
+        element.value=_return;
+
+    }else{
+        //  alert(num.length);
+        if(num.length>10){//alert("Phone Number should be 10 characters");
+            showAlertModal("Phone Number should be 10 characters");
+            element.value=_return;
+            //  element.value="";
+            element.focus();
+            return false;
+        }
+        else{
+            if(num.length<10){//alert("Please give atleast  10 charcters in PhoneNumber");
+         
+                showAlertModal("Please give atleast  10 charcters in PhoneNumber");
+                element.value=_return;
+            }
+        }
+    }
+    return _return;
+}
+******************************
+checkemail
+-----------
+function checkEmail(element)
+{
+    if(element.value.length>60){
+        element.value="";
+        //alert("Invalid E-mail Address! Please re-enter.");
+        showAlertModal("Email length must be less than 60 characters.");
+        //alert("Invalid E-mail Address! Please re-enter.");
+        return(false);
+    }
+    if(element.value.length<=60){
+        // [^@]+@[^@]+\.[a-zA-Z]{2,6} //  /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/
+        if(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(element.value)){  
+            return(true);
+        }
+    }
+    element.value="";
+    //alert("Invalid E-mail Address! Please re-enter.");
+    showAlertModal("Invalid E-mail Address! Please re-enter.");
+    //alert("Invalid E-mail Address! Please re-enter.");
+    return(false);
+}
+ 
+*********************
+registrationValidation()
+------------------
+ else if($('#profession').val()=="5"){
+            if($('#yearOfPass').val()==""||$('#yearOfPass').val()==null)
+            {
+                showAlertModal("Enter yearOfPass");
+                $('#yearOfPass').css("border", "1px solid red");
+                $('#yearOfPass').focus();
+                return false;
+            } 
+        }
+
+
+ if($('#facebookProfile').val()==""||$('#facebookProfile').val()==null)
+    {
+        showAlertModal("Enter facebookProfile");
+        $('#facebookProfile').css("border", "1px solid red");
+        $('#facebookProfile').focus();
+        return false;
+    }
+
+********************
+function checkNotOthers(){
+    //  alert('------')
+    if(document.getElementById("frmCollege").value=="Others"){
+       
+        showAlertModal("You Can't enter your college name you have to intimate to "); 
+        
+    }
+}
+
+
+***********************************
+
+
+
+loginAction.java
+----------------
+logincheck()
+------------
+String dbCompanyName="";
+String dbSalary="";
+		
+String dbFirstName = "";
+String dbLastName = "";
+		
+dbFirstName = str[2];
+dbLastName = str[3];		
+dbCompanyName=str[11];
+dbSalary=str[12]; 
+						
+session.setAttribute(AppConstants.SESSION_COMPANYNAME,dbCompanyName);
+session.setAttribute(AppConstants.SESSION_SALARY,dbSalary);
+
+
+session.setAttribute(AppConstants.SESSION_FIRSTNAME, dbFirstName);
+System.out.println("firstname-***********---" + dbFirstName);
+session.setAttribute(AppConstants.SESSION_LASTNAME, dbLastName);
+System.out.println("lastname--************--" + dbLastName);
+
+
+Appconstan
+----------
+public static final String SESSION_COMPANYNAME="companyName";
+public static final String SESSION_SALARY="salary";
+
+public static final String SESSION_FIRSTNAME="firstName";
+public static final String SESSION_LASTNAME="lastName";	
+
+DashboardAction
+-----------------
+getMyProfile()
+--------------
+if (session.getAttribute(AppConstants.SESSION_FIRSTNAME) != null) {
+firstName = session.getAttribute(AppConstants.SESSION_FIRSTNAME).toString();
+}
+if (session.getAttribute(AppConstants.SESSION_LASTNAME) != null) {
+lastName = session.getAttribute(AppConstants.SESSION_LASTNAME).toString();
+ }
+
+
+ 
+if (session.getAttribute(AppConstants.SESSION_COMPANYNAME) != null) {
+ companyName = session.getAttribute(AppConstants.SESSION_COMPANYNAME).toString();
+ }
+ if (session.getAttribute(AppConstants.SESSION_SALARY) != null) {
+ salary = session.getAttribute(AppConstants.SESSION_SALARY).toString();
+ }
+ 
+ 
+				
+updateDetails()
+---------------
+httpServletRequest.getSession(false).setAttribute(AppConstants.SESSION_FIRSTNAME, getFirstName());
+httpServletRequest.getSession(false).setAttribute(AppConstants.SESSION_LASTNAME, getLastName());
+
+httpServletRequest.getSession(false).setAttribute(AppConstants.SESSION_COMPANYNAME, getCompanyName());
+httpServletRequest.getSession(false).setAttribute(AppConstants.SESSION_SALARY, getSalary());
+				
+DashboardImpl
+---------------
+updateDetails()
+----------------
+FName=?,LName=?,
+
+pstatement.setString(1, dashBoardAction.getFirstName());
+System.out.println("name------"+dashBoardAction.getFirstName());
+pstatement.setString(2, dashBoardAction.getLastName());
+System.out.println("name------"+dashBoardAction.getLastName());				
+				
+-----------------------------------for name to udate in myprofile-----------------------------------
+myprofile.jsp
+------------
+<div class="form-group">
+<s:textfield type="text" cssClass="form-control"  required="required" placeholder="First Name" id="firstName" name="firstName" value="%{firstName}"/>
+ </div> 
+<div class="form-group">
+<s:textfield type="text" cssClass="form-control"  required="required" placeholder="Last Name" id="lastName" name="lastName" value="%{lastName}"/>
+</div> 
+
+
+<div class="form-group" style="margin-top: 20px">
+ <label  >First Name</label></div>
+<div class="form-group" style="margin-top: 20px">
+ <label  >Last Name</label></div>										
+	

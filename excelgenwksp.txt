@@ -1,0 +1,523 @@
+DashboardAction.java
+-----------------
+updateDetails()
+---------------
+String professionType=httpServletRequest.getSession(false).getAttribute(AppConstants.SESSION_PROFESSION_TYPE).toString();
+            
+resultMessage = ServiceLocator.getDashBoardService().updateDetails(this,professionType);
+
+
+DashBoardService
+----------------
+public String updateDetails(DashBoardAction dashBoardAction,String professionType) throws ServiceLocatorException;
+
+DashBoardServiceImpl
+--------------------
+public String updateDetails(DashBoardAction dashBoardAction,String professionType) throws ServiceLocatorException {
+ if (professionType.equals("1")) 
+{
+                    
+ pstatement.setString(4, dashBoardAction.getCollegeId());
+
+} else if (professionType.equals("2")) {
+                   
+pstatement.setString(4, dashBoardAction.getCompanyName());
+
+}
+
+RegistraintsDetails.jsp
+-------------------------
+sno,profession,company
+
+
+
+
+for excel generation
+--------------------
+enrollcollegeListActivation.jsp
+------------------------------
+after table
+<s:hidden name="gridDownload" id="gridDownload" value="%{gridDownload}"/> 
+
+
+RegisterCoachSearch
+-----------------------------
+  <div class="col-sm-1" style="margin-left: 4px">
+                                        <div onclick="generateRegisterCoachDetExcelSheet()"  class="btn btn-primary col-sm-0">&nbsp;ExportToExcel</div>
+                                    </div>
+									
+									
+<script>
+function generateRegisterCoachDetExcelSheet(){
+var exportExcelSheet;
+var gridDownload=document.getElementById('gridDownload').value; //gridDownload
+// alert(gridDownload);
+var url= "exportRegisterCoachDetExcelSheet.action?gridDownload="+gridDownload+"&registerCoachExcelSheet="+exportExcelSheet; //gridDownload
+    
+ //   alert(url);
+ window.location=url;
+                    
+}
+ </script>
+<s:hidden name="gridDownload" id="gridDownload" value="%{gridDownload}"/> 
+general.xml
+-----------
+<action name="exportRegisterCoachDetExcelSheet" class="com.mss.apcloud.DashBoard.DashBoardAction"  method="exportRegisterCoachDetExcelSheet">
+        </action>
+<action name="exportWorkshopDetExcelSheet" class="com.mss.apcloud.DashBoard.DashBoardAction"  method="exportWorkshopDetExcelSheet">
+        </action>
+
+DashBoardAction.java
+---------------------
+public String exportRegisterCoachDetExcelSheet() {
+          System.out.println("entered-----");
+        String filename = "getRegisterCoachExcelSheet";
+        OutputStream out = null;
+         System.out.println("getGridDownload-->"+getGridDownload());
+        try {
+            filename = filename.concat(".xls");
+
+            httpServletResponse.setContentType("application/vnd.ms-excel");
+            httpServletResponse.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+            int count;
+            WritableWorkbook wworkbook;
+            wworkbook = Workbook.createWorkbook(httpServletResponse.getOutputStream());
+            WritableSheet wsheet = wworkbook.createSheet("First Sheet", 0);
+            Label label;
+            wsheet.setColumnView(0, 10);
+            wsheet.setColumnView(1, 25);
+            wsheet.setColumnView(2, 30);
+            wsheet.setColumnView(3, 20);
+            wsheet.setColumnView(4, 30);
+            wsheet.setColumnView(5, 40);
+            wsheet.setColumnView(6, 90);
+            wsheet.setColumnView(7, 20);
+           // wsheet.setColumnView(8, 70);
+           // wsheet.setColumnView(9, 70);
+           // wsheet.setColumnView(10, 70);
+            if (!"".equals(getGridDownload())) {
+                String data = DataSourceDataProvider.getInstance().getRegisterCoachExcelDeta(getGridDownload());
+                // String data1 = DataSourceDataProvider.getInstance().getFacultyGridData(getGridDownload());
+
+                  System.out.println("---------data---------"+data);
+                setGridDownload(data);
+
+                WritableFont cellFont = new WritableFont(WritableFont.TIMES, 12);
+                cellFont.setColour(Colour.BLACK);
+
+                WritableCellFormat cellFormat = new WritableCellFormat(cellFont);
+                cellFormat.setBackground(Colour.LIGHT_BLUE);
+
+                String[] s = getGridDownload().split(Pattern.quote("^"));
+                for (int i = 0; i < s.length; i++) {
+
+                    String ss = s[i];
+                    String[] inner = ss.split(Pattern.quote("|"));
+
+                    for (int j = 0; j < inner.length; j++) {
+
+                        if (i == 0) {
+                            label = new Label(j, i, inner[j], cellFormat);
+                            wsheet.addCell(label);
+                        } else {
+                            label = new Label(j, i, inner[j]);
+                            wsheet.addCell(label);
+                        }
+                    }
+                }
+            }
+            wworkbook.write();
+            wworkbook.close();
+        } catch (Exception e) {
+        } finally {
+
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (Exception e) {
+                }
+
+            }
+        }
+        //  System.out.println("********************RecruitmentAjaxHandlerAction :: doDownloadXlsResults() Action End*********************");
+        return null;
+    }
+
+
+	**************
+	//excel sheet for workshop
+      public String exportWorkshopDetExcelSheet() {
+          System.out.println("entered-----");
+        String filename = "getWorkshopDetExcelSheet";
+        OutputStream out = null;
+         System.out.println("getGridDownload-->"+getGridDownload());
+        try {
+            filename = filename.concat(".xls");
+
+            httpServletResponse.setContentType("application/vnd.ms-excel");
+            httpServletResponse.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+            int count;
+            WritableWorkbook wworkbook;
+            wworkbook = Workbook.createWorkbook(httpServletResponse.getOutputStream());
+            WritableSheet wsheet = wworkbook.createSheet("First Sheet", 0);
+            Label label;
+            wsheet.setColumnView(0, 10);
+            wsheet.setColumnView(1, 25);
+            wsheet.setColumnView(2, 30);
+            wsheet.setColumnView(3, 20);
+            wsheet.setColumnView(4, 60);
+            wsheet.setColumnView(5, 60);
+            wsheet.setColumnView(6, 70);
+            wsheet.setColumnView(7, 70);
+            wsheet.setColumnView(8, 70);
+            wsheet.setColumnView(9, 70);
+         
+            if (!"".equals(getGridDownload())) {
+                String data = DataSourceDataProvider.getInstance().getWorkshopExcelDeta(getGridDownload());
+                // String data1 = DataSourceDataProvider.getInstance().getFacultyGridData(getGridDownload());
+
+                  System.out.println("---------data---------"+data);
+                setGridDownload(data);
+
+                WritableFont cellFont = new WritableFont(WritableFont.TIMES, 12);
+                cellFont.setColour(Colour.BLACK);
+
+                WritableCellFormat cellFormat = new WritableCellFormat(cellFont);
+                cellFormat.setBackground(Colour.LIGHT_BLUE);
+
+                String[] s = getGridDownload().split(Pattern.quote("^"));
+                for (int i = 0; i < s.length; i++) {
+
+                    String ss = s[i];
+                    String[] inner = ss.split(Pattern.quote("|"));
+
+                    for (int j = 0; j < inner.length; j++) {
+
+                        if (i == 0) {
+                            label = new Label(j, i, inner[j], cellFormat);
+                            wsheet.addCell(label);
+                        } else {
+                            label = new Label(j, i, inner[j]);
+                            wsheet.addCell(label);
+                        }
+                    }
+                }
+            }
+            wworkbook.write();
+            wworkbook.close();
+        } catch (Exception e) {
+        } finally {
+
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (Exception e) {
+                }
+
+            }
+        }
+        //  System.out.println("********************RecruitmentAjaxHandlerAction :: doDownloadXlsResults() Action End*********************");
+        return null;
+    }
+      
+	
+	
+DSDP
+-----
+ public String getRegisterCoachExcelDeta(String query) throws ServiceLocatorException {
+         System.out.println("********************DataSourceDataProvider :: getRegisterCoachGridData Method Start*********************");
+
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+
+        String resultString = "";
+        int i=1;
+
+        //  System.out.println("getGridData :: query string ------>" + query);
+
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            statement = connection.createStatement();
+            // query = "SELECT Id,NAME,Email,phoneNumber,Title,NameofExistingCompany,AreasOfExpertise,STATUS FROM tblCoachDetails";
+            resultSet = statement.executeQuery(query);
+            System.out.println("-----query----"+query);
+
+            resultString = "Sno" + "|" + "Name " + "|" + "Email" + "|" + "Phone" + "|" + " Title " + "|" + "Company Name " + "|" + "AOE" + "|" + "Status"  + "^";
+            System.out.println("resultString"+resultString);
+
+            while (resultSet.next()) {
+
+              // resultString += resultSet.getString("ID") + "|"
+                resultString += i++ + "|"
+                        + resultSet.getString("NAME") + "|"
+                        + resultSet.getString("Email") + "|"
+                        + resultSet.getString("phoneNumber") + "|"
+                        + resultSet.getString("Title") + "|"
+                        + resultSet.getString("NameofExistingCompany") + "|"
+                        + resultSet.getString("AreasOfExpertise") + "|"
+                        + resultSet.getString("STATUS") + "^";
+                       // + getRegGridData(resultSet.getString("collegeId")) + "^";
+
+                //  getFacultyGridData(); 
+
+
+
+            }
+
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                // resultSet Object Checking if it's null then close and set null
+                if (resultSet != null) {
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (statement != null) {
+                    statement.close();
+                    statement = null;
+                }
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException ex) {
+                throw new ServiceLocatorException(ex);
+            }
+        }
+        //  System.out.println("********************DataSourceDataProvider :: getGridData Method End*********************");
+        return resultString;
+    }
+   
+************
+//excel sheet for workshop
+     public String getWorkshopExcelDeta(String queryString) throws ServiceLocatorException {
+         System.out.println("********************DataSourceDataProvider :: getRegisterCoachGridData Method Start*********************");
+
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+
+        String resultString = "";
+        int i=1;
+
+        //  System.out.println("getGridData :: query string ------>" + query);
+
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            statement = connection.createStatement();
+            // query = "SELECT Id,NAME,Email,phoneNumber,Title,NameofExistingCompany,AreasOfExpertise,STATUS FROM tblCoachDetails";
+            resultSet = statement.executeQuery(queryString);
+            System.out.println("-----query----"+queryString);
+
+            resultString = "Sno" + "|" + " Code " + "|" + "College/Company Name" + "|" + "Date" + "|" +  "Location" + "|"  + "Faculty" + "|" + "Student1 Details" + "|" + "Student2 Details" + "|" + "Student3 Details" + "|" + "Student4 Details" +  "^";
+            System.out.println("resultString"+resultString);
+
+            while (resultSet.next()) {
+                String compOrClg="";
+                if (resultSet.getInt("workshopType") == 1) {
+                  
+                    compOrClg=(resultSet.getString("CollegeName"));
+                    
+                } else {
+                    compOrClg=(resultSet.getString("companyName"));
+                    
+                }
+              // resultString += resultSet.getString("ID") + "|"
+                resultString += i++ + "|"
+                        + resultSet.getString("Code") + "|"
+                        + compOrClg + "|"
+                       
+                        + DateUtility.getInstance().convertToviewFormat(resultSet.getString("Date")) + "|"
+                      //  + resultSet.getString("Ambassadors") + "|"
+                        + resultSet.getString("Location") + "|"
+                      //  + resultSet.getString("Ambassadors") + "|"
+                      //  + resultSet.getString("STATUS") + "^";
+                
+                        + getFacultyGridData(resultSet.getString("collegeId")) + "^";
+
+                //  getFacultyGridData(); 
+
+
+
+            }
+
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                // resultSet Object Checking if it's null then close and set null
+                if (resultSet != null) {
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (statement != null) {
+                    statement.close();
+                    statement = null;
+                }
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException ex) {
+                throw new ServiceLocatorException(ex);
+            }
+        }
+        //  System.out.println("********************DataSourceDataProvider :: getGridData Method End*********************");
+        return resultString;
+    }
+
+   
+    DashBoardAction
+	-----------------
+	registredCoachDetailsSearch()
+	-----------------------------
+	private String registerCoachExcelSheet;
+	this
+	DashboardService
+	-----------------
+	registredCoachDetailsSearch()
+	-----------------------------
+	DashBoardAction dashBoardAction,
+	
+	DashboardServiceimpl
+	---------------------
+	registredCoachDetailsSearch()
+	-----------------------------
+	DashBoardAction dashBoardAction,
+	dashBoardAction.setGridDownload(query);
+	
+	
+	
+	getWorkshopAddDetails()
+	-----------------------
+	dashBoardAction.setGridDownload(queryString);
+	
+	
+	excelsheet for workshop 
+	-----------------------
+	workshopDetailsAdd.jsp
+	---------------------
+	<div class="col-sm-1" style="margin-left: 4px">
+                                        <div onclick="generateWorkshopDetExcelSheet()"  class="btn btn-primary col-sm-0">&nbsp;ExportToExcel</div>
+                                    </div> 
+									
+	<s:hidden name="gridDownload" id="gridDownload" value="%{gridDownload}"/>
+	
+	 <script>
+            function generateWorkshopDetExcelSheet(){
+                var exportExcelSheet;
+                var gridDownload=document.getElementById('gridDownload').value; //gridDownload
+                 alert(gridDownload);
+                var url= "exportWorkshopDetExcelSheet.action?gridDownload="+gridDownload+"&workshopDetExcelSheet="+exportExcelSheet; //gridDownload
+    
+                //   alert(url);
+                window.location=url;
+                    
+            }
+        </script>
+		
+		
+	
+	*****************************************
+	
+	DELIMITER $$
+
+USE `apcloud`$$
+
+DROP PROCEDURE IF EXISTS `spInsertRegDetails`$$
+
+CREATE DEFINER=`AppCloud`@`%` PROCEDURE `spInsertRegDetails`(
+ 	IN  frmFName                      VARCHAR(60), 
+        IN  frmLName                      VARCHAR(60), 
+        IN  frmEmail                      VARCHAR(60), 
+        IN  frmPassword                   VARCHAR(100), 
+        IN  frmPhoneNum                   VARCHAR(25), 
+        IN  frmProfessionType             VARCHAR(3),
+        IN  frmCollege                    VARCHAR(60), 
+	IN  frmFaceBookLink               VARCHAR(100),
+	IN  frmBranch                     VARCHAR(60), 
+	IN  frmYear                       VARCHAR(30),
+        IN  frmStreet                     VARCHAR(150),
+        IN  frmCity                       VARCHAR(30), 
+        IN  frmDistrict                   VARCHAR(30), 
+        IN  frmZipCode                    VARCHAR(6),
+        IN  frmState  			  VARCHAR(20),
+        IN  frmCreatedDate                DATETIME,
+	IN  frmDesig                      VARCHAR(60), 
+	OUT maxId			  INT (10)
+     )
+BEGIN
+DECLARE isAmbassador	INT DEFAULT 0;
+INSERT INTO tblRegistrationDetails
+         (
+        `FName`, 
+	`LName`, 
+	`Email`, 
+	`Password`, 
+	`PhoneNum`, 
+	`ProfessionType`, 
+	`Designation`,
+	`FaceBookLink`,
+	`Branch`,
+	`Year`, 
+	`College`, 
+	
+	`Street`, 
+	`City`, 
+	`District`, 
+	`ZipCode`, 
+	`State`,
+	`CreatedDate`
+         )
+    VALUES 
+         ( 
+           frmFName, 
+           frmLName , 
+           frmEmail , 
+           frmPassword, 
+           frmPhoneNum, 
+           frmProfessionType,
+	   frmDesig,
+	   frmFaceBookLink,	
+	   frmBranch,
+	   frmYear,	
+           frmCollege,
+	  
+           frmStreet,
+	   frmCity,
+	   frmDistrict,
+	   frmZipCode,
+	   frmState,
+	   frmCreatedDate
+         ) ; 
+ SELECT LAST_INSERT_ID() INTO maxId;	
+ 
+ 
+ SELECT COUNT(id) INTO isAmbassador FROM tblEnrollCollegeDetails WHERE Fac_Email=frmEmail OR Student1Email=frmEmail OR Student2Email=frmEmail OR Student3Email=frmEmail OR Student4Email=frmEmail ;
+ IF isAmbassador > 0 THEN
+ UPDATE tblRegistrationDetails SET IsAmbassador=1 WHERE id=maxId;
+ END IF;
+ IF frmProfessionType = '2' THEN
+ UPDATE tblRegistrationDetails SET CompanyName=frmCollege WHERE id=maxId;
+ END IF;
+ 
+ 
+ -- select max(id) from tblRegistrationDetails into maxId;
+-- SET @maxId = LAST_INSERT_ID(); 
+    END$$
+
+DELIMITER ;
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

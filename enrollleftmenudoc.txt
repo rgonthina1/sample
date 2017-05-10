@@ -1,0 +1,316 @@
+EnrollLeftMenuCollegeDetails
+----------------------------
+enrollCollegeListActivation-------------full jsp has to paste.
+
+
+leftmenu.jsp
+------------
+<li><a href="<%=request.getContextPath()%>/general/resetPassword.action" >Reset Password</a></li>--------->out side of condition.
+<li><a href="<%=request.getContextPath()%>/general/enrollLeftMenuCollege.action" >Enroll Colleges</a></li>
+
+
+general.xml
+----------
+ <action name="enrollLeftMenuCollege" class="com.mss.apcloud.DashBoard.DashBoardAction" method="enrollLeftMenuCollege">
+             <result type="redirect" name="input">general/login.action</result>
+             <result name="success">enrollCollegeListActivation.jsp</result>              
+                       
+        </action>
+		
+Dashboard.action
+----------------
+   private List enrollCollegeMenuList;
+  
+    private String facultyName;
+   // private String student;
+     public String enrollLeftMenuCollege() {
+       // System.out.println("-----------enrollLeftMenuCollege-----------");
+        try {
+            HttpSession session = httpServletRequest.getSession(false);
+            
+            if (session.getAttribute(AppConstants.SESSION_PROFESSION_TYPE) != null) {
+                professionType = session.getAttribute(AppConstants.SESSION_PROFESSION_TYPE).toString();
+            }
+
+            setEnrollCollegeMenuList(ServiceLocator.getDashBoardService().enrollLeftMenuCollege(getId(),getCollegeCode(),getCollegeName(),getLocation(),getCodegenerate(),getLink(),getFrmDate(),getToDate()));
+           // System.out.println("----collegeMenuList-----" + getEnrollCollegeMenuList());
+            System.err.println("Result action----" + getEnrollCollegeMenuList().size());
+        
+        }catch (ServiceLocatorException ex) {
+            ex.printStackTrace();
+            return ERROR;
+        }
+     
+
+
+        return SUCCESS;
+     
+    }
+
+service
+-------
+public List enrollLeftMenuCollege(int id,String collegeCode,String college,String location,String codeGenerate,String link,String frmDate,String toDate) throws ServiceLocatorException;
+
+
+impl
+-----
+  public List enrollLeftMenuCollege(int id,String collegeCode,String college,String location,String codeGenerate,String link,String frmDate, String toDate) throws ServiceLocatorException {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+       
+        List enrollList = new ArrayList();
+      //  System.out.println("----enrollLeftMenuCollege----");
+  /*  String query ="SELECT tblEnrollCollegeDetails.id,tblEnrollCollegeDetails.CollegeCode,tblLKCollegesList.CollegeName"
+        + " tblEnrollCollegeDetails.Location,tblEnrollCollegeDetails.CODE,tblLKCollegesList.Website,tblEnrollCollegeDetails.EnrolledDate"
+        + " tblEnrollCollegeDetails.ModifiedDate FROM tblEnrollCollegeDetails" 
+        + " JOIN tblLKCollegesList ON (tblEnrollCollegeDetails.CollegeName=tblLKCollegesList.id)"
+        + " WHERE 1=1";*/
+         String query ="SELECT tblEnrollCollegeDetails.id,tblEnrollCollegeDetails.CollegeCode,tblLKCollegesList.CollegeName,tblEnrollCollegeDetails.Location,"
+                 + "tblEnrollCollegeDetails.CODE,tblLKCollegesList.Website,tblEnrollCollegeDetails.EnrolledDate,tblEnrollCollegeDetails.ModifiedDate,tblLKCollegesList.id as collegeId "
+                         + "FROM tblEnrollCollegeDetails JOIN tblLKCollegesList ON (tblEnrollCollegeDetails.CollegeName=tblLKCollegesList.id) WHERE 1=1";
+        if (frmDate != null&&!"".equals(frmDate)) {
+            query += (" AND EnrolledDate >= '" + DateUtility.getInstance().convertStringToMySQLDate(frmDate) + "' ");
+            // query += (" OR ModifiedDate >= '" + DateUtility.getInstance().convertStringToMySQLDate(frmDate) + "' ");
+           // System.out.println("---getFrmDate--" + query);
+        }
+       if (toDate != null&&!"".equals(toDate)) {
+            query += (" AND EnrolledDate <= '" + DateUtility.getInstance().convertStringToMySQLDate(toDate) + "' ");
+            //query += (" OR ModifiedDate <= '" + DateUtility.getInstance().convertStringToMySQLDate(toDate) + "' ");
+            //System.out.println("---getToDate--" + query);
+        }
+      // System.out.println("---query----" + query);
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                GeneralVTO generalVTO = new GeneralVTO();
+
+                System.out.println("---query----" + query);
+
+                //  generalVTO.setDATE(DateUtility.getInstance().convertToviewFormat(resultSet.getDate("DATE").toString()));
+               generalVTO.setId(resultSet.getInt("id"));
+              //  System.out.println("-----id---------"+id);
+                generalVTO.setCollegeCode(resultSet.getString("CollegeCode"));
+         
+                generalVTO.setCollegeName(resultSet.getString("CollegeName"));
+             
+                
+                generalVTO.setLocation(resultSet.getString("Location"));
+             //   generalVTO.setFacultyName(resultSet.getString("FacultyName"));
+                
+
+                generalVTO.setLink(resultSet.getString("Website"));
+                
+                generalVTO.setCode(resultSet.getString("Code"));
+                
+                generalVTO.setFrmDate(resultSet.getString("EnrolledDate"));
+
+
+               generalVTO.setToDate(resultSet.getString("ModifiedDate"));
+               generalVTO.setCollegeId(resultSet.getString("collegeId"));
+
+               // System.out.println("resultSet.getIntid -->" + resultSet.getInt("Id"));
+            //    response = resultSet.getInt("Id") + "" + resultSet.getString("CollegeName") + "" + resultSet.getString("Website");
+
+                enrollList.add(generalVTO);
+
+            }
+        } catch (SQLException sqle) {
+            throw new ServiceLocatorException(sqle);
+        } finally {
+            try {
+                if (resultSet != null) {
+
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                    preparedStatement = null;
+                }
+
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException sql) {
+                //System.err.print("Error :"+sql);
+            }
+
+        }
+        return enrollList;
+    }
+
+   
+ajax.js
+-------
+function getEnrollCollegeCoordinators(collegeId,workshopCode,localtion){
+   // alert("collegeName---------------"+collegeId);
+    $.ajax(
+    {
+        type : 'post',
+						
+        url : 'ajax/getEnrollCollegeCoordinators.action?collegeId='+collegeId,
+        async: false,
+						
+        timeout : 60000
+    }).success(function(data) {
+        //alert('success'+data);
+        
+        coordinatorsContentt(data,workshopCode,localtion);
+       
+        
+    }).error(function(x, t, m) {
+        if (t == "timeout") {
+            alert("time-->" + t);
+        } else {
+            alert("elese part timer");
+        }
+    });
+}
+
+
+function coordinatorsContentt(data,workshopCode,localtion){
+//alert("------------coordinatorsContentt-------------------")
+    var str='';
+  
+   
+    
+ if(data!='No data'){
+        
+        // str='<div class="row"><div class="col-sm-4 wrkshp"><div class="heavy">Workshop Code : </div>'+workshopCode+'</div><div class="col-sm-4"><div class="heavy">Date :</div> '+Date+'</div><div class="col-sm-4"><div class="heavy">Location :</div> '+localtion+'</div></div>';
+        var split=data.split('@@@');
+        document.getElementById('titleName').innerHTML=split[23]+' Ambassadors for AP Cloud Initiative';
+       str+='<div class="row open-btn" id="addClass"   href="#"><img src="../images/FACULTY-ICON-new.jpg"> <span class="heavy"> Faculty Details</span> </div>';
+        str+='<div class="row"><br><div class="col-sm-0">';
+        //str+='<i class="fa  fa-barcode" aria-hidden="true"></i><span class="heavy">Workshop Code :</span>'+workshopCode+'<br>'+'<i class="fa fa-calendar"></i><span //class="heavy">Date :</span>'+Date+'<br>'+'<i class="fa fa-location-arrow bigicon"></i><span class="heavy">Location :</span> '+localtion+'</div>';
+        str+='<span class="heavy">'+split[0]+'</span><br>'+'<i class="fa fa-phone"></i>&nbsp;'+'+91-'+split[1]+'<br>'+'<i class="fa fa-envelope-o bigicon"></i>'+split[2]+'<br>'+'<i class="fa fa-university"></i>'+split[23]+'</div>';
+        str+='<div class="row open-btn" id="addClass"   href="#"><img src="../images/Students-256.png"> <span class="heavy" style="position: relative; top: 8px;">Student ambassadors</span> </div>';
+        str+='<br><div class="row"><div class="col-sm-4">'+'<span class="heavy">'+split[3]+'</span><br><i class="fa fa-phone"></i>&nbsp;+91-'+split[4]+'<br>'+'<i class="fa fa-envelope-o bigicon"></i>'+split[5]+'<br> <i class="fa fa-graduation-cap" aria-hidden="true"></i>'+split[6]+' '+split[7]+'<br>'+'<i class="fa fa-university"></i>'+split[23]+'</div>';
+        str +='<div class="col-sm-4">'+'<span class="heavy">'+split[8]+'</span><br><i class="fa fa-phone"></i>&nbsp;+91-'+split[9]+'<br>'+'<i class="fa fa-envelope-o bigicon"></i>'+split[10]+'<br> <i class="fa fa-graduation-cap" aria-hidden="true"></i>'+split[11]+' '+split[12]+'<br>'+'<i class="fa fa-university"></i>'+split[23]+'</div>';
+        str+='<div class="col-sm-4">'+'<span class="heavy">'+split[13]+'</span><br><i class="fa fa-phone"></i>&nbsp;+91-'+split[14]+'<br>'+'<i class="fa fa-envelope-o bigicon"></i>'+split[15]+'<br> <i class="fa fa-graduation-cap" aria-hidden="true"></i>'+split[16]+' '+split[17]+'<br>'+'<i class="fa fa-university"></i>'+split[23]+'</div>';
+        str+='<div class="col-sm-4">'+'<span class="heavy">'+split[18]+'</span><br><i class="fa fa-phone"></i>&nbsp;+91-'+split[19]+'<br>'+'<i class="fa fa-envelope-o bigicon"></i>'+split[20]+'<br> <i class="fa fa-graduation-cap" aria-hidden="true"></i>'+split[21]+' '+split[22]+'<br>'+'<i class="fa fa-university"></i>'+split[23]+'</div></div>';
+alert("------str-----"+str)   
+ }
+    else{
+        
+        str="No co-ordinators registered"
+    }
+    // alert(str);
+    document.getElementById("techTopics").innerHTML=str;
+
+} 
+
+ajax.xml
+---------
+ <action name="getEnrollCollegeCoordinators" class="com.mss.apcloud.ajax.AjaxHandlerAction" method="getEnrollCollegeCoordinators"/>
+
+ajaxaction
+----------
+
+  public void getEnrollCollegeCoordinators()
+    {
+        String resultMsg = "";
+       // System.out.println("getEnrollCollegeCoordinators----------------------"+collegeId);
+       
+            try {
+                resultMsg = ServiceLocator.getAjaxHandlerService().getEnrollCollegeCoordinators(collegeId);
+              //  System.out.println("------------------getEnrollCollegeCoordinators---------------" + resultMsg);
+                servletResponse.setContentType("text");
+                if (!resultMsg.equals("No data")) {
+                    
+                    servletResponse.getWriter().write(resultMsg);
+                }else
+                {
+                    servletResponse.getWriter().write(resultMsg);
+                }
+            } catch (IOException ex) {
+                Logger.getLogger(AjaxHandlerAction.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (ServiceLocatorException ex) {
+                Logger.getLogger(AjaxHandlerAction.class.getName()).log(Level.SEVERE, null, ex);
+            }
+      
+    }
+
+	
+	service
+	--------
+	
+	public String getEnrollCollegeCoordinators(int collegeName) throws ServiceLocatorException;
+	
+	
+	
+	impl
+	----
+	public String getEnrollCollegeCoordinators(int collegeId) throws ServiceLocatorException {
+      //   System.out.println("---------getEnrollCollegeCoordinators-------------");
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        String response = "";
+      /*  String query = "SELECT tblEnrollCollegeDetails.FacultyName,";
+        query += "tblEnrollCollegeDetails.Fac_PhoneNum, tblEnrollCollegeDetails.Fac_Email, tblEnrollCollegeDetails.Student1Name, tblEnrollCollegeDetails.Student1Email,tblEnrollCollegeDetails.Student1Branch,tblEnrollCollegeDetails.Student1Year,";
+        query += "tblEnrollCollegeDetails.Student1PhoneNum,tblEnrollCollegeDetails.Student2Name,tblEnrollCollegeDetails.Student2Email, tblEnrollCollegeDetails.Student2PhoneNum,tblEnrollCollegeDetails.Student2Branch,tblEnrollCollegeDetails.Student2Year, ";
+        query += "tblEnrollCollegeDetails.Student3Name, tblEnrollCollegeDetails.Student3Email, tblEnrollCollegeDetails.Student3PhoneNum,tblEnrollCollegeDetails.Student3Branch,tblEnrollCollegeDetails.Student3Year,tblLKCollegesList.CollegeName ";
+        query += " FROM tblEnrollCollegeDetails JOIN  tblLKCollegesList ON (tblEnrollCollegeDetails.CollegeName=tblLKCollegesList.id) WHERE tblEnrollCollegeDetails.CollegeName =" + collegeId;*/
+
+        String query = "SELECT tblEnrollCollegeDetails.FacultyName,tblEnrollCollegeDetails.Fac_PhoneNum,tblEnrollCollegeDetails.Fac_Email,tblEnrollCollegeDetails.Student1Name,tblEnrollCollegeDetails.Student1Email,tblEnrollCollegeDetails.Student1Branch,tblEnrollCollegeDetails.Student1Year,tblEnrollCollegeDetails.Student1PhoneNum,tblEnrollCollegeDetails.Student2Name,tblEnrollCollegeDetails.Student2Email, tblEnrollCollegeDetails.Student2PhoneNum,tblEnrollCollegeDetails.Student2Branch,tblEnrollCollegeDetails.Student2Year,tblEnrollCollegeDetails.Student3Name,tblEnrollCollegeDetails.Student3Email,tblEnrollCollegeDetails.Student3PhoneNum,tblEnrollCollegeDetails.Student3Branch,tblEnrollCollegeDetails.Student3Year,tblEnrollCollegeDetails.Student4Name,tblEnrollCollegeDetails.Student4Email,tblEnrollCollegeDetails.Student4Branch,tblEnrollCollegeDetails.Student4Year,tblEnrollCollegeDetails.Student4PhoneNum,tblLKCollegesList.CollegeName FROM tblEnrollCollegeDetails JOIN  tblLKCollegesList ON (tblEnrollCollegeDetails.CollegeName=tblLKCollegesList.id) WHERE tblEnrollCollegeDetails.CollegeName ='" + collegeId+"'";
+
+         // System.out.println("--------getEnrollCollegeCoordinators------------>" + query);
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                // String date=DateUtility.getInstance().convertToviewFormat(resultSet.getDate("Date").toString());
+               // response = resultSet.getString("PrincipalName") + "@@@" + resultSet.getString("Prin_PhoneNum") + "@@@" + resultSet.getString("Prin_Email");
+                response =  resultSet.getString("FacultyName") + "@@@" + resultSet.getString("Fac_PhoneNum") + "@@@" + resultSet.getString("Fac_Email");
+                response += "@@@" + resultSet.getString("Student1Name") + "@@@" + resultSet.getString("Student1PhoneNum") + "@@@" + resultSet.getString("Student1Email") + "@@@" + resultSet.getString("Student1Branch") + "@@@" + resultSet.getString("Student1Year");
+                response += "@@@" + resultSet.getString("Student2Name") + "@@@" + resultSet.getString("Student2PhoneNum") + "@@@" + resultSet.getString("Student2Email") + "@@@" + resultSet.getString("Student2Branch") + "@@@" + resultSet.getString("Student2Year");
+                response += "@@@" + resultSet.getString("Student3Name") + "@@@" + resultSet.getString("Student3PhoneNum") + "@@@" + resultSet.getString("Student3Email") + "@@@" + resultSet.getString("Student3Branch") + "@@@" + resultSet.getString("Student3Year");
+                response += "@@@" + resultSet.getString("Student4Name") + "@@@" + resultSet.getString("Student4PhoneNum") + "@@@" + resultSet.getString("Student4Email") + "@@@" + resultSet.getString("Student4Branch") + "@@@" + resultSet.getString("Student4Year") + "@@@" + resultSet.getString("CollegeName");
+                // response += "@@@" + resultSet.getString("CollegeName");
+
+            // System.out.println("-----------getEnrollCollegeCoordinators---------------response-->"+response);
+            } else {
+                response = "No data";
+            }
+
+
+
+
+            //System.err.println("Result----" + response);
+        } catch (SQLException sqle) {
+            throw new ServiceLocatorException(sqle);
+        } finally {
+            try {
+                if (resultSet != null) {
+
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                    preparedStatement = null;
+                }
+
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException sql) {
+                //System.err.print("Error :"+sql);
+            }
+
+        }
+        return response;
+
+    }
+
+
+	
+		
+		

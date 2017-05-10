@@ -1,0 +1,94 @@
+function populateDashBoardForWorkshopTree(response){
+    alert("populate----------")
+    var dashBoardReq=response.split("^^^");
+    var code=new Array();
+    alert("workShop")
+    var topics=new Array();
+    var cType=new Array();
+    var colName=new Array();
+    alert("colleges")
+    var total=0;
+    if(response.length>0){
+        alert("response")
+        for(var i=0;i<dashBoardReq.length-1;i++){   
+            var Values=dashBoardReq[i].split("|");
+            {  
+                code.push(parseInt(Values[0]));
+                topics.push(parseInt(Values[1]));
+                cType.push(parseInt(Values[2]));
+                colName.push(parseInt(Values[3]));
+            }
+           
+        }
+        alert("in for loop ")
+        alert(code);
+        alert(topics);
+        alert(cType);
+        alert(colName);
+        showWorkshopTree(code,topics,cType,colName);
+        alert("showwksptree")
+    }
+    else{
+        alert("no records to dispaly");
+    }
+    alert("populate end")
+    
+} 
+
+
+function showWorkshopTree(code,topics,cType,colName)
+{
+    alert("show starts")
+    var Combined = new Array();
+    Combined[0] = ['Code','Topics','CType','ColName'];//to get names for color defined
+    for (var i = 0; i < code.length-1; i++){
+        Combined[i + 1] = [code[i], topics[i],cType[i],colName[i]]; 
+        
+        
+    }
+    //second parameter is false because first row is headers, not data.
+    var data = google.visualization.arrayToDataTable(Combined, false);
+    alert("data")
+    var options = {
+        title: 'APcloud overview', //this is one option
+        colors: ['#0000FF', '#00FF00'],//this one is second option
+        isStacked: true,
+        // chartArea: { left: '55', top: '50', width: '88%', height: '65%' }, 
+        legend: {
+            position: 'top', 
+            alignment: 'center'
+        // width: $(window).width(),
+        //  height: $(window).height()*0.75
+        } , 
+        vAxis: {
+            title: "Students And Coaches",
+            titleColor:"darkgreen"
+        //                textStyle: {color: '#24BEFF'}
+        }, 
+        hAxis: {
+            title: "Workshops",
+            titleColor:"green",
+            scaleType: 'log',
+            showTextEvery: 0,
+            slantedText: 'true'
+        //                textStyle: {color: '#24BEFF'}
+        }
+    
+    };
+    // data.addColumn('string', 'Node');  
+    // data.addColumn('string', 'Parent');  
+    //  data.addRows([[ 'Workshops',''], ['students', '1']] );  
+    
+    var chart = new google.visualization.orgchart(document.getElementById('chart'));
+    alert("chart")
+    // Instantiate and draw our chart, passing in some options.
+    /* chart.draw(data, options);
+        $(window).resize(function () {
+        chart.draw(data, options);
+    });*/
+    chart.draw(data,options);
+    $(window).resize(function () {
+        chart.draw(data,options);
+        alert("chart end")
+    });
+}

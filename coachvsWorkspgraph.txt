@@ -1,0 +1,333 @@
+masterDashboard.jsp
+-------------------
+,'WorkShopVsStudents':'WorkShopVsStudents'
+
+ ajax.js
+ -------
+ getBarCharts()
+ ---------------
+  else if(value=='workShopEnrolled')
+    {
+        getEnrolledWorkshopsandTopics();
+    }
+    else
+    {
+        alert("wksp---vs-----st")
+        getWorkshopVsStudents();
+        alert("----getWorkshopVsStudents--------")
+    }
+
+//workshop vs students graph
+function getWorkshopVsStudents()
+{
+    alert("--in---getWorkshopVsStudents-------") 
+    
+    $.ajax(
+    {
+        type : 'post',
+						
+        url : 'ajax/getWorkshopVsStudents.action',
+        async: false,
+						
+        timeout : 60000
+    }).success(function(data) {
+        alert('success'+data);
+            
+        alert("---url-----")
+
+        if(data!='{}')
+        {
+          
+            
+            //resultData
+            //   $("#loadingSpan").html('');
+            populateDashBoardForStuCoachCharts(data);
+        // alert("populateDashBoardForCoachCharts(data)")
+        }
+        else
+        {
+                    
+            showAlertModal('No result found');
+        }         
+        
+            
+            
+    }).error(function(x, t, m) {
+        if (t == "timeout") {
+            alert("time-->" + t);
+        } else {
+            alert("elese part timer");
+        }
+    });
+}
+
+function populateDashBoardForStuCoachCharts(response){
+    alert("populate----------")
+    var dashBoardReq=response.split("^^^");
+    var workShop=new Array();
+    var students=new Array();
+    var couch=new Array();
+    var total=0;
+    if(response.length>0){
+        for(var i=0;i<dashBoardReq.length-1;i++){   
+            var Values=dashBoardReq[i].split("|");
+            {  
+                workShop.push(Values[0]);
+                students.push(parseInt(Values[1]));
+              couch.push(parseInt(Values[2]));
+            }
+        }
+        alert(workShop);
+        alert(students);
+         alert(couch);
+        showStuCoachChart(workShop,students,couch);
+    }
+    else{
+        alert("no records to dispaly");
+    }
+} 
+
+function showStuCoachChart(workShop,students,couch)
+{
+    var Combined = new Array();
+    Combined[0] = ['Workshops','Students','Coachs'];//to get names for color defined
+    for (var i = 0; i < workShop.length-1; i++){
+        Combined[i + 1] = [workShop[i], students[i],couch[i]]; 
+    }
+    //second parameter is false because first row is headers, not data.
+    var data = google.visualization.arrayToDataTable(Combined, false);
+    var options = {
+        title: 'APcloud overview', //this is one option
+        colors: ['#0000FF', '#00FF00'],//this one is second option
+        isStacked: true,
+        // chartArea: { left: '55', top: '50', width: '88%', height: '65%' }, 
+        legend: {
+            position: 'top', 
+            alignment: 'center'
+        // width: $(window).width(),
+        //  height: $(window).height()*0.75
+        } , 
+        vAxis: {
+            title: "Students And Coaches",
+            titleColor:"darkgreen"
+        //                textStyle: {color: '#24BEFF'}
+        }, 
+        hAxis: {
+            title: "Workshops",
+            titleColor:"green",
+             scaleType: 'log',
+            showTextEvery: 0,
+            slantedText: 'true'
+        //                textStyle: {color: '#24BEFF'}
+        }
+    
+    };
+    var chart = new google.visualization.ColumnChart(document.getElementById('chart'));
+  
+    // alert("chart"+chart)
+   
+    // Instantiate and draw our chart, passing in some options.
+    chart.draw(data, options);
+    
+    $(window).resize(function () {
+        chart.draw(data, options);
+    });
+    
+// alert("chart end"+chart)
+}
+
+function closeAlertForCoach()
+{
+    document.getElementById("addCoachMessg").innerHTML='';
+    document.getElementById("resultMessg").style.display='none';
+}
+
+function getCoachAndWorkshopDet(code)
+{
+    
+    
+    
+    document.getElementById("overlayworkshopId").value=code;
+    // ('#myModalCoach').modal('show'); 
+   /// alert(""+code);
+    $.ajax(
+    {
+        type : 'post',
+						
+        url : 'ajax/getCoachAndWorkshopDet.action?&workshopCode='+code,
+        async: false,
+						
+        timeout : 60000
+    }).success(function(data) {
+        setCoachesForWorkshops(data);
+    //  alert('success'+data);
+    // document.getElementById("resultMessg").style.display='block';
+    //   document.getElementById("addCoachMessg").innerHTML='<div class="cal-sm-3"> '+data+'</div>';
+    // getEnrolledWorkshopandTopicsData(data);
+                 
+    }).error(function(x, t, m) {
+        if (t == "timeout") {
+            alert("time-->" + t);
+        } else {
+            alert("elese part timer");
+        }
+    });
+   
+}
+
+function setCoachesForWorkshops(coachesMapData){
+
+    if($("div").is("#coach1"))
+    {
+     //   alert("remove"); 
+        $("#coach1").remove();
+        $(".coachCss").after('<select id="coach1" class="selectivity-result-item "   onclick="" multiple="multiple"  name="coach1 "><option value="-1">Select skill</option></select>');
+    }
+
+
+
+
+   // alert("---in setCoachesForWorkshops---"+coachesMapData);
+    var ctr=0;
+    var allCoachList=document.getElementById("coachesMap").value;
+    
+  //  alert("allCoachList-->"+allCoachList);
+    
+    var allCoachListValue=  allCoachList.replace(/[{()}]/g, '');
+    var flagList=allCoachListValue.split("FLAG")
+    var totalSkills=flagList[0].split(",");
+    
+    
+   // alert("totalSkills-->"+totalSkills);
+    
+    var coachesMapData1=  coachesMapData.replace(/[{()}]/g, '');
+    var coachflagList=coachesMapData1.split("FLAG")
+    var coachflagList1=coachflagList[0].split(",");
+    
+    
+    
+   // alert("coachflagList1-->"+coachflagList1);
+   
+    
+    var $select = $('#coach1');
+    $select.find('option').remove();   
+    for (var i = 0; i < totalSkills.length; i++){ 
+        var Values=totalSkills[i].split("=");
+        for(var j=0;j<coachflagList1.length;j++){  
+            var Values1=coachflagList1[j].split("=");
+            //  alert("Values[0]--->"+Values[0]+"Values1[0]---->"+Values1[0]);
+            if (Number(Values[0]) == Number(Values1[0])) {
+                ctr=1;
+                break ;
+            }
+        }
+        if(ctr==1){
+         //  alert("in if")
+            $('<option selected="true">').val(Number(Values[0])).text(Values[1]).appendTo($select); 
+            
+        }
+        else{
+            
+            $('<option>').val(Number(Values[0])).text(Values[1]).appendTo($select);
+           
+        }
+        ctr=0;
+        
+    }
+    
+  
+   
+    $('#coach1').selectivity({
+            
+        multiple: true,
+        placeholder: 'Type to search Categories'
+                   
+    });
+    
+// $("#coach1").show();
+// $("#IsEmployee").show();
+    
+    
+}
+
+
+
+function addCoachNamesInWorkshop()
+{
+  
+    closeAlert();
+    document.getElementById("addCoachWorkshopResultMessg1").innerHTML='';
+    var coachesMap=document.getElementById("coachesMap").value;
+    var workshopId=document.getElementById("overlayworkshopId").value;
+ 
+     var wrkspCoachesArry = [];    
+    $("#coach1 :selected").each(function(){
+        wrkspCoachesArry.push($(this).val()); 
+    });
+    
+  
+    if(coachesMap.length>0)
+    {
+
+        $("#save").button('loading');
+        $.ajax(
+        {
+            type : 'post',
+
+            url : 'ajax/addCoachNamesInWorkshop.action?wrkshCoaches='+wrkspCoachesArry+'&workshopCode='+workshopId,
+            async: false,
+
+            timeout : 60000
+        }).success(function(data) {
+                //document.getElementById("resultMessg").style.display='block';
+            document.getElementById("addCoachWorkshopResultMessg1").innerHTML=data;
+             
+        }).error(function(x, t, m) {
+            if (t == "timeout") {
+                alert("time-->" + t);
+            } else {
+                alert("elese part timer");
+            }
+        });
+        $("#save").button('reset');
+    }else
+    {
+        document.getElementById("resultMessg").style.display='block';
+        document.getElementById("addCoachMessg1").innerHTML='<div class="cal-sm-12"> Please enter mandatory fields </div>';
+    }    
+}
+	
+ajax.xml
+--------
+ <action name="getCoachDetailsCharts" class="com.mss.apcloud.ajax.AjaxHandlerAction" method="getCoachDetailsCharts"/>
+         
+          <action name="getStudentRegistredToCollegeDetails" class="com.mss.apcloud.ajax.AjaxHandlerAction" method="getStudentRegistredToCollegeDetails"/>
+         <action name="getEnrolledWorkshopsandTopics" class="com.mss.apcloud.ajax.AjaxHandlerAction" method="getEnrolledWorkshopsandTopics"/>
+         <action name="getRegisterdDetails" class="com.mss.apcloud.ajax.AjaxHandlerAction" method="getRegisterdDetails"/>
+         <action name="getWorkshopVsStudents" class="com.mss.apcloud.ajax.AjaxHandlerAction" method="getWorkshopVsStudents"/>
+         
+         <action name="getCoachAndWorkshopDet" class="com.mss.apcloud.ajax.AjaxHandlerAction" method="getCoachAndWorkshopDet"/>
+         
+         <!--add coach names in workshop -->
+          <action name="addCoachNamesInWorkshop" class="com.mss.apcloud.ajax.AjaxHandlerAction" method="addCoachNamesInWorkshop"/>
+
+
+general.xml
+-----------
+ <action name="coachDetailsDashboard" >              
+            <result>coachDetailsDashboard.jsp</result>
+        </action>
+        
+        <action name="masterDashboard" class="com.mss.apcloud.DashBoard.DashBoardAction" method="masterDashboard">
+            <result>masterDashboard.jsp</result> 
+            <result type="redirect" name="input">general/login.action</result>
+			
+			
+DashboardAcction.java
+---------------------
+workshopDetailsAdd()
+--------------------
+coachesMap=DataSourceDataProvider.getInstance().getCoachAndWorkshopDet();			
+            <result type="redirect" name="login">general/login.action</result>
+            <result type="redirect" name="accessFailed">general/accessFailed.action</result>
+        </action>		  

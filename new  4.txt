@@ -1,0 +1,48 @@
+DELIMITER $$
+
+USE `apcloud`$$
+
+DROP PROCEDURE IF EXISTS `spWorkshopTree`$$
+
+CREATE DEFINER=`AppCloud`@`%` PROCEDURE `spWorkshopTree`(
+		OUT response VARCHAR(100)
+     )
+BEGIN  
+	DECLARE v_code INT;
+	DECLARE v_topi INT;
+	DECLARE v_students VARCHAR(15);
+	DECLARE v_coaches VARCHAR(15);
+	DECLARE v_emp_Software VARCHAR(15);
+	DECLARE v_collge VARCHAR(100);
+	DECLARE v_empcnt VARCHAR(100);	
+	DECLARE v_stucnt VARCHAR(100);
+	DECLARE v_couchCmpy VARCHAR(100);
+	DECLARE v_maxId VARCHAR(10);
+	
+	-- To get count of number of workshops
+	SELECT COUNT(CODE) INTO v_code FROM tblWorkshop ;
+	
+	-- SELECT COUNT(enrollTopics) INTO v_topi  FROM tblEnrolledWorkshopTopics ;
+	-- To get count for topic names
+	 SELECT COUNT(TopicName) INTO v_topi FROM tblLKTopics;
+	
+	
+	
+	-- select SUM(IF(workshopCandidateType = 's', 1, 0)) ,SUM(IF(workshopCandidateType='c',1,0)),SUM(IF(workshopCandidateType='se',1,0))  into v_students,v_coaches,v_emp_Software FROM tblEnrolledWorkshopTopics;
+	-- To get count for college and company	
+	SELECT COUNT(CollegeName) INTO v_collge FROM tblWorkshop ;
+	
+	-- To get count for student,coaches and software(employee)
+	SELECT  COUNT(DISTINCT registredId) INTO v_students FROM tblEnrolledWorkshopTopics WHERE workshopCandidateType='s';
+        SELECT  COUNT(DISTINCT registredId) INTO v_emp_Software FROM tblEnrolledWorkshopTopics WHERE workshopCandidateType='se';
+        SELECT  COUNT(DISTINCT registredId) INTO v_coaches FROM tblEnrolledWorkshopTopics WHERE workshopCandidateType='c';
+	-- SELECT COUNT(Id) INTO v_empcnt FROM tblWorkshop WHERE CONCAT('',CollegeName * 1) <> CollegeName;
+	
+	
+	-- SELECT COUNT(NameofExistingCompany),SUM(IF(workshopCandidateType='c',1,0)) INTO v_couchCmpy FROM tblEnrolledWorkshopTopics JOIN tblCoachDetails cd ON (registredId=cd.Id) GROUP BY NameofExistingCompany;
+	
+	SET response = CONCAT('',v_code,'|','',v_topi,'|','',v_students,'|','',v_coaches,'|','',v_collge,'|','',v_emp_Software);
+	
+    END$$
+
+DELIMITER ;

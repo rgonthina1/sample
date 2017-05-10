@@ -1,0 +1,572 @@
+RegistrationDetailsEditPage.jsp
+-------------------------------
+full has to copy
+
+general.xml
+------------
+ <action name="editRegidtrationDetails" class="com.mss.apcloud.general.RegistrationAction" method="editRegidtrationDetails">
+            <result type="redirect" name="login">general/login.action</result>
+            <result>RegistrationDetailsEditPage.jsp</result>      
+           
+        </action>
+         
+         
+         <action name="updateRegistrationDetails" class="com.mss.apcloud.general.RegistrationAction" method="updateRegistrationDetails">
+            <result type="redirect" name="login">general/login.action</result>
+             
+            <result name="success" type="redirect">general/editRegidtrationDetails.action?userId=${userId}&amp;profession=${profession}&amp;resultMessage=${resultMessage}</result>      
+           
+        </action>
+
+RegistrationDetailsAction
+----------------------------
+//edit details for registration page
+public String editRegidtrationDetails() {
+        System.out.println("----------editRegidtrationDetails---------");
+        try {
+            resultType = LOGIN;
+            String query;
+
+            if (servletRequest.getSession(false).getAttribute(AppConstants.SESSION_EMAIL) != null) {
+                resultType = "accessFailed";
+                if (AuthorizationManager.getInstance().isAuthorizedUser("REGISTRATION_LIST", Integer.parseInt(servletRequest.getSession(false).getAttribute(AppConstants.SESSION_PROFESSION_TYPE).toString()))) {
+                    //setCollegeList(DataSourceDataProvider.getInstance().getCollegeNames());
+                    // setCollegeList(DataSourceDataProvider.getInstance().getEnrolledCollegeNames());
+                    // query = "SELECT tblRegistrationDetails.id , CONCAT(FName,' ' ,LName) AS NAME,Email,PhoneNum,CollegeName,College FROM tblRegistrationDetails LEFT OUTER JOIN tblLKCollegesList ON College=tblLKCollegesList.id where 1=1";
+                    collegeMap = DataSourceDataProvider.getInstance().getCollegeNames();
+                    setStateMap(DataSourceDataProvider.getInstance().getStateNames());
+                    System.out.println("------state");
+                    setDistrictIdList(DataSourceDataProvider.getInstance().getDistrictNames());
+                    
+                    
+                    System.out.println("------" + collegeMap);
+                    if("3".equals(getProfession())){
+                        query="SELECT tblRegistrationDetails.id,FName,LName,Email,PhoneNum,College,CollegeCode,Location,CODE"
+                                + " FROM tblRegistrationDetails JOIN tblEnrollCollegeDetails ON (Fac_Email=Email AND CollegeName=College) "
+                                + " WHERE tblRegistrationDetails.id='"+getUserId()+"'" ;
+                    }else{
+                        
+                    
+                   query = "SELECT tblRegistrationDetails.id , FName,LName,Email,PhoneNum,CollegeName,College,PASSWORD,Branch,YEAR,"
+                           + " FaceBookLink,Street,City,District,ZipCode,State,CompanyName,Designation,ProfessionType FROM tblRegistrationDetails "
+                           + " LEFT OUTER JOIN tblLKCollegesList ON College=tblLKCollegesList.id  where 1=1";
+                   /* query = "SELECT tblRegistrationDetails.id , FName,LName,Email,PhoneNum,CollegeName,"
+                            + " College,PASSWORD,Branch,YEAR,FaceBookLink,Street,City,District,"
+                            + " ZipCode,State,CompanyName,Designation,ProfessionType,"
+                            
+                            + " FROM tblRegistrationDetails LEFT OUTER JOIN tblLKCollegesList ON College=tblLKCollegesList.id "
+                            + " where 1=1";*/
+
+                    // niku kavalisina values aa table lo unnai?
+                    if (getProfession() != null && !"".equals(getProfession())) {
+                        query += " and ProfessionType='" + getProfession() + "'";
+                    } else {
+                        query += " and ProfessionType='1' ";//Default Student -->1S/w --> 2,Faculty-->3,Admin-->4
+                    }
+
+                    if (getColleges() != null && !"".equals(getColleges())) {
+                        query += " and College='" + getColleges() + "'";
+
+                    }
+                    query=query+" and tblRegistrationDetails.id='"+getUserId()+"'";
+                    }
+                    System.out.println("query==" + query);
+                    /*if (getFrmDate() != null && !"".equals(getFrmDate())) {
+                    query += (" AND DATE(tblRegistrationDetails.CreatedDate) >= '" + DateUtility.getInstance().convertStringToMySQLDate(getFrmDate()) + "' ");
+                    }
+                    if (getToDate() != null && !"".equals(getToDate())) {
+                    query += (" AND DATE(tblRegistrationDetails.CreatedDate) <= '" + DateUtility.getInstance().convertStringToMySQLDate(getToDate()) + "' ");
+                    }*/
+                    setGeneralVTO(ServiceLocator.getGeneralService().editRegidtrationDetails(this, query));
+
+                    // setWorkshopCode(getWorkshopCode());
+                    // System.out.println("enroll in action -->"+getEnrolldetails().size());
+                    resultType = SUCCESS;
+
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ERROR;
+        }
+        return resultType;
+    }
+
+
+GeneralService
+---------------
+ //edit for registration details
+     public GeneralVTO editRegidtrationDetails(RegistrationAction registrationAction, String query) throws ServiceLocatorException;
+   
+
+GeneralServiceImpl
+---------------------
+ //edit registration details
+    public GeneralVTO editRegidtrationDetails(RegistrationAction registrationAction, String query) throws ServiceLocatorException {
+        System.out.println("----in impl----editreg-");
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        String response = "";
+        // List<GeneralVTO> registereditdetails = new ArrayList();
+
+        GeneralVTO generalVTO = null;
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                generalVTO = new GeneralVTO();
+                generalVTO.setFname(resultSet.getString("FName"));
+                generalVTO.setLname(resultSet.getString("LName"));
+                generalVTO.setEmail(resultSet.getString("Email"));
+                generalVTO.setPhoneNumber(resultSet.getString("PhoneNum"));
+                generalVTO.setUserId(resultSet.getString("id"));
+//                if (resultSet.getString("CollegeName") != null) {
+//                    generalVTO.setCollegeName(resultSet.getString("CollegeName"));
+//                } else {
+                generalVTO.setCollegeName(resultSet.getString("College"));
+                //  }
+                if ("3".equals(registrationAction.getProfession())) {
+
+                    generalVTO.setCollegeCode(resultSet.getString("CollegeCode"));
+                    generalVTO.setLocation(resultSet.getString("Location"));
+                    generalVTO.setCode(resultSet.getString("CODE"));
+                } else {
+
+                    generalVTO.setBranch(resultSet.getString("Branch"));
+                    generalVTO.setYear(resultSet.getString("YEAR"));
+                    generalVTO.setFacebookLink(resultSet.getString("FaceBookLink"));
+                    generalVTO.setStreet(resultSet.getString("Street"));
+                    generalVTO.setCity(resultSet.getString("City"));
+                    generalVTO.setDistrict(resultSet.getString("District"));
+                    generalVTO.setZipcode(resultSet.getString("ZipCode"));
+                    generalVTO.setState(resultSet.getString("State"));
+                    generalVTO.setFrmCompany(resultSet.getString("CompanyName"));
+                    System.out.println("-----------" + resultSet.getString("CompanyName"));
+                    generalVTO.setFrmDesignation(resultSet.getString("Designation"));
+                    System.out.println("------designation---" + resultSet.getString("Designation"));
+                }
+
+                // generalVTO.setCollegeCode(resultSet.getString("CollegeCode"));
+                //  generalVTO.setCode(resultSet.getString("CODE"));
+                //  generalVTO.setLocation(resultSet.getString("Location"));
+                //   System.out.println("------faculty---" + resultSet.getString("Location")+""+resultSet.getString("CODE")+""+resultSet.getString("CollegeCode"));
+
+            }
+        } catch (SQLException sqle) {
+            throw new ServiceLocatorException(sqle);
+        } finally {
+            try {
+                if (resultSet != null) {
+
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                    preparedStatement = null;
+                }
+
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException sql) {
+                //System.err.print("Error :"+sql);
+            }
+
+        }
+
+        return generalVTO;
+    }
+
+RegistrationDetails.jsp
+----------------------
+ <td align="left"><a href="editRegidtrationDetails.action?userId=<s:property value="userId"/>&profession=<s:property value="profissionType"/>"> <s:property value="fname"/><s:property value="lname"/></a></td>
+
+		    <td align="left"><s:property value="password"/></td>
+                                        <td align="left"><s:property value="branch"/></td>
+                                        <td align="left"><s:property value="year"/></td>
+                                        <td align="left"><s:property value="facebookLink"/></td>
+                                        <td align="left"><s:property value="street"/></td>
+                                        <td align="left"><s:property value="city"/></td>
+                                        <td align="left"><s:property value="district"/></td>
+                                        <td align="left"><s:property value="zipcode"/></td>
+                                        <td align="left"><s:property value="state"/></td>
+                                        <td align="left"><s:property value="frmCompany"/></td>
+                                        <td align="left"><s:property value="frmDesignation"/></td>
+                                        <td align="left"><s:property value="collegeid"/></td>
+                                        <td align="left"><s:property value="code"/></td>
+                                        <td align="left"><s:property value="location"/></td>
+
+
+********for update***********
+ //updating registered details
+
+RegistrationAction.java
+------------------------
+  private String fname;
+    private String lname;
+     private String fbprofile;
+    private String phoneNumber;
+    private String collegeCode;
+   
+  public String updateRegistrationDetails() throws ServiceLocatorException {
+           String result = "";
+           
+        System.out.println("--updateRegistrationDetails--in action----");
+        resultType = LOGIN;
+      //  String professionType=getHttpServletRequest().getSession(false).getAttribute(AppConstants.SESSION_PROFESSION_TYPE).toString();
+        try {
+            
+                //   if (AuthorizationManager.getInstance().isAuthorizedUser("COLLEGE_ADD_EDIT", Integer.parseInt(httpServletRequest.getSession(false).getAttribute(AppConstants.SESSION_PROFESSION_TYPE).toString()))) {
+            
+               // result=ServiceLocator.getGeneralService().updateRegistrationDetails(getUserId(),getFname(),getLname(), getEmail(), getPhoneNumber(), getCollegeName(),getBranch(),getYear(),getFbprofile(),getStreet(),getCity(),getDistrict(),getZipcode(),getState(),getFrmCompany(),getDesignation());
+                result=ServiceLocator.getGeneralService().updateRegistrationDetails(this);
+                //  httpServletRequest.getSession(false).setAttribute(AppConstants.SESSION_COLLEGELIST, getCollegeMenuList());
+              if (result.equals("success")) {
+                  setResultMessage("success");
+                  
+              }
+                resultType = SUCCESS;
+                //  }
+            
+        }
+        catch (ServiceLocatorException ex) {
+            ex.printStackTrace();
+            resultType = ERROR;
+        }
+        return resultType;
+    }
+
+generalservice
+--------------
+
+ //updating registration details
+public String updateRegistrationDetails(RegistrationAction registrationAction) throws ServiceLocatorException;
+
+generalserviceimpl
+----------------------
+//update registration details
+
+ public String updateRegistrationDetails(RegistrationAction registrationAction) throws ServiceLocatorException {
+        System.out.println("--------updateRegistrationDetails-------impl--------------");
+
+
+        String result = "";
+        String professionType = "";
+
+        String query = "";
+        String collegeQuery = "";
+        int updatedRows = 0;
+        Connection connection = null;
+        Connection connection1 = null;
+        PreparedStatement pstatement = null;
+        PreparedStatement pstatement1 = null;
+        ResultSet resultSet = null;
+        //  GeneralVTO generalVTO = null;
+        try {
+
+
+            connection = ConnectionProvider.getInstance().getConnection();
+            connection1 = ConnectionProvider.getInstance().getConnection();
+
+            System.out.println("user id-->" + registrationAction.getUserId());
+            System.out.println("profession-->" + registrationAction.getProfession());
+            if ("1".equals(registrationAction.getProfession())) { // 1 ante emiti?stu mari 2?s/w 3 means>a?facuty //edhi college icchanu annav?tesesanu
+                query = "UPDATE tblRegistrationDetails SET FName='" + registrationAction.getFname() + "',LName='" + registrationAction.getLname() + "' ,Email='" + registrationAction.getEmail() + "' ,PhoneNum='" + registrationAction.getPhoneNumber() + "' ,College='" + registrationAction.getCollegeName() + "',Branch='" + registrationAction.getBranch() + "',YEAR='" + registrationAction.getYear() + "' ,FaceBookLink='" + registrationAction.getFbprofile() + "',Street='" + registrationAction.getStreet() + "',City='" + registrationAction.getCity() + "',District='" + registrationAction.getDistrict() + "',ZipCode='" + registrationAction.getZipcode() + "',State='" + registrationAction.getState() + "' WHERE id='" + registrationAction.getUserId() + "'";
+
+            } else if ("2".equals(registrationAction.getProfession())) {
+                query = "UPDATE tblRegistrationDetails SET FName='" + registrationAction.getFname() + "',LName='" + registrationAction.getLname() + "' ,Email='" + registrationAction.getEmail() + "' ,PhoneNum='" + registrationAction.getPhoneNumber() + "'  ,FaceBookLink='" + registrationAction.getFbprofile() + "',Street='" + registrationAction.getStreet() + "',City='" + registrationAction.getCity() + "',District='" + registrationAction.getDistrict() + "',ZipCode='" + registrationAction.getZipcode() + "',State='" + registrationAction.getState() + "',CompanyName='" + registrationAction.getFrmCompany() + "',Designation='" + registrationAction.getFrmDesignation() + "' ,College='" + registrationAction.getFrmCompany() + "'  WHERE id='" + registrationAction.getUserId() + "'";
+
+            } else if ("3".equals(registrationAction.getProfession())) {
+                query = "UPDATE tblRegistrationDetails SET FName='" + registrationAction.getFname() + "',LName='" + registrationAction.getLname() + "' ,Email='" + registrationAction.getEmail() + "' ,PhoneNum='" + registrationAction.getPhoneNumber() + "'  WHERE id='" + registrationAction.getUserId() + "'";
+
+                collegeQuery = "UPDATE tblEnrollCollegeDetails SET CollegeCode='" + registrationAction.getCollegeCode() + "',CODE='" + registrationAction.getCode() + "',Location='" + registrationAction.getLocation() + "'  WHERE Fac_Email='" + registrationAction.getEmail() + "'";
+
+                pstatement1 = connection1.prepareStatement(collegeQuery);
+                updatedRows = pstatement1.executeUpdate();
+            }
+
+
+
+            System.out.println("---query---" + collegeQuery);
+
+            pstatement = connection.prepareStatement(query);
+            updatedRows = pstatement.executeUpdate();
+
+
+
+            System.out.println("updated-->" + updatedRows);
+            if (updatedRows > 0) {
+                result = "success";
+            }
+
+
+
+
+
+        } catch (SQLException se) {
+            throw new ServiceLocatorException(se);
+        } finally {
+            try {
+                if (resultSet != null) {
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (pstatement != null) {
+                    pstatement.close();
+                    pstatement = null;
+                }
+                if (pstatement1 != null) {
+                    pstatement1.close();
+                    pstatement1 = null;
+                }
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException se) {
+                throw new ServiceLocatorException(se);
+            }
+        }
+
+        return result;
+    }
+
+generalvto
+------------
+private String profissionType;
+ private String fname;
+    private String lname;
+   
+    private String branch;
+    private String year;
+    private String facebookLink;
+    private String street;
+    private String city;
+    private String district;
+    private String zipcode;
+    private String state;
+    private String phoneNumber;
+    private String designation;
+    private String frmCompany;
+    private String frmDesignation;
+private String frmOtherBranch;
+     
+     
+
+validation.js
+------------
+// validation for edit registration page
+
+function registrationEditValidation(){
+    alert($('#profession').val());
+    alert('entered------------------')
+    if($('#fname').val()==""||$('#fname').val()==null)
+    {
+        alert("fnameeeeeeeeeeeeeee")
+        showAlertModal("Enter First Name");
+        alert("enter first name")  
+        $('#fname').css("border", "1px solid red");
+            
+        return false;
+    }
+    
+    
+    if($('#lname').val()==""||$('#lname').val()==null)
+    {
+        alert("lllllllllllllln")
+        showAlertModal("Enter Last Name");
+           
+        $('#lname').css("border", "1px solid red");
+            
+        return false;
+    }
+   
+    if($('#email').val()==""||$('#email').val()==null)
+    {
+        showAlertModal("Enter Email");
+        $('#email').css("border", "1px solid red");
+        $('#email').focus();
+        return false;
+    }
+   
+    if($('#phoneNumber').val()==""||$('#phoneNumber').val()==null)
+    {
+        showAlertModal("Enter Phone Number");
+        $('#phoneNumber').css("border", "1px solid red");
+        $('#phoneNumber').focus();
+        return false;
+    }
+    
+    
+   
+    if($('#profession').val()=="1"){
+        if($('#profession').val()==-1){
+            showAlertModal("Select your Profession");
+            $('#profession').css("border", "1px solid red");
+            return false;
+        }
+        else
+        {
+         
+             
+            if($('#branch').val()==-1){
+                showAlertModal("Select your branch");
+                $('#branch').css("border", "1px solid red");
+                return false;
+            }
+   
+        
+            else if($('#branch').val()=="Others")
+            {
+            
+                if($('#frmOtherBranch').val()==""||$('#frmOtherBranch').val()==null)
+                {
+                    showAlertModal("Enter Branch Name");
+                    $('#frmOtherBranch').css("border", "1px solid red");
+                    $('#frmOtherBranch').focus();
+                    return false;
+                }
+                
+            }
+            if($('#year').val()==-1){
+                showAlertModal("Select your year of studing");
+                $('#year').css("border", "1px solid red");
+                return false;
+            }
+    
+        }
+   
+    
+            
+    }
+    else if($('#profession').val()=="2")
+    {
+        //alert($('#profession').val()+"1111111"+$('#frmCompany').val());
+        if($('#frmCompany').val()==""||$('#frmCompany').val()==null)
+        {
+            alert("com name")
+            showAlertModal("Enter Organisation name");
+            $('#frmCompany').css("border", "1px solid red");
+            $('#frmCompany').focus();
+            return false;
+        }
+          
+        if($('#frmDesignation').val()==""||$('#frmDesignation').val()==null)
+        {
+            showAlertModal("Enter Your Designation");
+            $('#frmDesignation').css("border", "1px solid red");
+            $('#frmDesignation').focus();
+            return false;
+        }      
+
+                
+    }
+       
+    else if($('#profession').val()=="3")
+    {
+        alert($('#profession').val()+"1111111"+$('#location').val());
+        if($('#collegeCode').val()==""||$('#collegeCode').val()==null)
+        {
+            alert("com name")
+            showAlertModal("Enter College Code");
+            $('#collegeCode').css("border", "1px solid red");
+            $('#collegeCode').focus();
+            return false;
+        }
+        
+          
+        if($('#code').val()==""||$('#code').val()==null)
+        {
+            alert("codeeeeeeeeeeee")
+            showAlertModal("Enter code");
+            $('#code').css("border", "1px solid red");
+            $('#code').focus();
+            return false;
+        }
+       // alert("location val-->"+$('#location').val());
+        if($('#location').val().trim()==""||$('#location').val()==null)
+        {
+            alert("looooooooooooo")
+            showAlertModal("Enter location");
+            $('#location').css("border", "1px solid red");
+            $('#location').focus();
+            return false;
+        } 
+          
+    
+    
+    }
+  //  alert("street val-->"+$('#street').val());
+   
+    //if($('#profession').val()=="3"){
+      
+    //  }
+    if($('#street').val().trim()=="" || $('#street').val()==null)
+    {
+        alert("streetttttttttttttttt")
+        showAlertModal("Enter Street");
+        $('#street').css("border", "1px solid red");
+        $('#street').focus();
+        return false;
+    }
+   
+  // alert("city val-->"+$('#city').val());
+    if($('#city').val().trim()==""||$('#city').val()==null)
+    {
+        alert("cityyyyyyyyyyy")
+        showAlertModal("Enter City");
+        $('#city').css("border", "1px solid red");
+        $('#city').focus();
+        return false;
+    }
+    
+    // alert("zipcode val-->"+$('#zipcode').val());
+    if($('#zipcode').val().trim()==""||$('#zipcode').val()==null)
+    {
+        alert("zipcodeeeeeeeeeeeeee")
+        showAlertModal("Enter Zip Code");
+        $('#zipcode').css("border", "1px solid red");
+        $('#zipcode').focus();
+        return false;
+    }
+   
+
+}
+
+//for branch 
+function getRegBranch(flag){
+    var branch=document.getElementById("branch").value;
+    var branchHiddenValue=document.getElementById("branchHiddenValue").value;
+    //  alert(flag); 
+    //  alert(branchHiddenValue);
+    
+    if(flag=="onload"){
+        if(branchHiddenValue=="ECE" || branchHiddenValue=="EEE" || branchHiddenValue=="CSE" || branchHiddenValue=="IT" || branchHiddenValue=="MCA"){
+            document.getElementById("branchdiv").style.display="block";
+        }
+        else
+        {
+            document.getElementById("branch").value="Others";
+            document.getElementById("frmOtherBranch").value=branchHiddenValue;
+            //document.getElementById("branchdiv").style.display="none";
+            document.getElementById("branchOtherDiv").style.display="block";
+        }
+    }
+    else{
+        if(document.getElementById("branch").value=="Others"){
+            document.getElementById("branchOtherDiv").style.display="block";
+        // alert("----frmOtherBranch----");
+        } else{
+            document.getElementById("branchOtherDiv").style.display="none";
+        }
+    
+        
+    }
+
+
+}

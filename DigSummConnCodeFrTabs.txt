@@ -1,0 +1,203 @@
+Digital summit
+--------------
+
+tblConfApplicant---IsSelected----tinyint--4---0
+spDigitalSummitDashboard---procedure
+
+----msws starts-----
+------
+JobApplicationData.php
+-----------------------
+full has to give
+confScript.js
+------------
+element.id=='applyingFor'---------fieldLengthValidator()
+confAjaxutil.js
+-------------
+full
+AjaxJobApplicationData.php
+-----------------------------
+full has to give
+
+AjaxUpdateJobApplicationData.php
+-----------------------------------
+full has to give
+
+-----------msws ends here-------------
+
+Apcloud
+-------
+spworkshop---procedure
+
+masterdashboard.jsp---full has to give
+
+ajaxutil.js
+----------
+function digitalSummitDashboard(){
+    // alert("digitalSummitDashboard")
+    document.getElementById("loadingAcoountSearch").style.display = 'block';
+    $.ajax(
+    {
+        type : 'post',
+						
+        url : 'ajax/getDSDashBoard.action',
+        async: false,
+						
+        timeout : 60000
+    }).success(function(data) {
+      
+        if(data!='{}')
+        {
+         
+            
+            digitalSummitDashboardPop(data);
+        }
+        else
+        {
+                    
+            showAlertModal('No result found');
+        }         
+        
+            
+            
+    }).error(function(x, t, m) {
+        if (t == "timeout") {
+            alert("time-->" + t);
+        } else {
+            alert("elese part timer");
+        }
+    });
+}
+function digitalSummitDashboardPop(response){
+    //alert("in DS")
+    var values=response.split("|");
+   
+    document.getElementById("totAttendesRegis").innerHTML=values[0];
+    document.getElementById("totAttendes").innerHTML=values[1];
+    document.getElementById("totMeanHackRegis").innerHTML=values[2];
+     document.getElementById("totMHSelected").innerHTML=values[3];
+    //  document.getElementById("totCulturalRegis").innerHTML=values[4];
+    document.getElementById("totJobFairRegs").innerHTML=values[4];
+    document.getElementById("totJFSelected").innerHTML=values[5];
+    document.getElementById("loadingAcoountSearch").style.display = "none";
+    
+    
+   
+//alert(values[7]+"|"+values[8])
+   
+}
+
+ajax.xml
+--------
+ <action name="getDSDashBoard" class="com.mss.apcloud.ajax.AjaxHandlerAction" method="getDSDashBoard"/>
+
+AjaxHandlerAction.java
+----------------------
+//get Digital Dashboard count
+      public void getDSDashBoard() {
+        System.out.println("---getDSDashBoard--------");
+        String DSTree = "";
+        if (servletRequest.getSession(false).getAttribute(AppConstants.SESSION_ID) != null) {
+
+            //  if (AuthorizationManager.getInstance().isAuthorizedUser("MASTER_DASHBOARD", Integer.parseInt(servletRequest.getSession(false).getAttribute(AppConstants.SESSION_PROFESSION_TYPE).toString()))) {
+            try {
+                HttpSession session = servletRequest.getSession(false);
+                DSTree = ServiceLocator.getAjaxHandlerService().getDSDashBoard();
+                System.out.println("DSTree-->"+DSTree);
+                servletResponse.setContentType("text");
+                servletResponse.getWriter().write(DSTree);
+            } catch (Exception ex) {
+            }
+
+            // }
+        }
+
+    }      
+
+AjaxHandlerService
+------------------
+public String getDSDashBoard() throws ServiceLocatorException;	
+	
+AjaxHandlerServiceImpl
+----------------------
+//get DS count
+     public String getDSDashBoard() throws ServiceLocatorException {
+        System.out.println("-----in impl getDSDashBoard----");
+        String result = "";
+
+        Connection connection = null;
+        CallableStatement callableStatement = null;
+        ResultSet resultSet = null;
+        String outPutString = "";
+
+
+
+        /*@param primaryAction used to store actions*/
+        try {
+
+            connection = DigitalSummitDBConnection.getDSConnection();
+            System.out.println("connection-->"+connection);
+            callableStatement = connection.prepareCall("call spDigitalSummitDashboard(?)");
+
+            callableStatement.registerOutParameter(1, Types.VARCHAR);
+            callableStatement.execute();
+            outPutString = callableStatement.getString(1);
+            System.out.println("outPutString in getDSDashBoard from db proc-->" + outPutString);
+
+        } catch (SQLException se) {
+            throw new ServiceLocatorException(se);
+        } finally {
+            try {
+                if (resultSet != null) {
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (callableStatement != null) {
+                    callableStatement.close();
+                    callableStatement = null;
+                }
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException se) {
+                throw new ServiceLocatorException(se);
+            }
+        }
+
+        return outPutString;
+    }
+
+----took new class to get connection  for digital summit using jdbc--------
+DigitalSummitDBConnection.java
+------------------------------
+package com.mss.apcloud.util;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+
+
+/**
+ *
+ * @author miracle
+ */
+public class DigitalSummitDBConnection {
+  public static Connection getDSConnection() throws SQLException{
+       System.out.println("-----------getDSConnection------------------");
+         Connection con=null;
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+             con = DriverManager.getConnection("jdbc:mysql://192.168.1.203:3306/mswcm","AppAdmin","lokam001");
+        } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return con;
+    }
+  
+}

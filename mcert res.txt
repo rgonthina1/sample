@@ -1,0 +1,128 @@
+ public List getMcertResult(McertificationAction mcertificationAction) throws ServiceLocatorException {
+        System.out.println("--getmcertres---impl---");
+        Connection connection = null;
+        Connection connection1 = null;
+        PreparedStatement preparedStatement = null;
+        PreparedStatement preparedStatement1 = null;
+        ResultSet resultSet = null;
+        String response = "";
+        List mcertResList = new ArrayList();
+        List mcertConResList = new ArrayList();
+        List fnlList = new ArrayList();
+        ResultSet resultSet1 = null;
+        GeneralVTO generalVTO;
+
+        //  String query = "SELECT Id,CONCAT(Fname,'',Lname) AS NAME,Email,College FROM tblRegistrationDetails ";
+        String query = "SELECT rg.Id,tbcollege.CollegeName,FName,Email FROM apcloud.tblRegistrationDetails rg "
+                + "JOIN apcloud.tblLKCollegesList tbcollege ON (rg.College=tbcollege.id) where 1=1";
+
+        if (mcertificationAction.getConsultentName() != null && !"".equals(mcertificationAction.getConsultentName())) {
+            query += " and FName='" + mcertificationAction.getConsultentName() + "'";
+            System.out.println("----cname----" + mcertificationAction.getConsultentName());
+        }
+
+
+        if (mcertificationAction.getCollegeName() != null && !"".equals(mcertificationAction.getCollegeName())) {
+            query += " and College='" + mcertificationAction.getCollegeName() + "'";
+            System.out.println("----college----" + mcertificationAction.getCollegeName());
+        }
+
+
+
+        if (mcertificationAction.getEmailId() != null && !"".equals(mcertificationAction.getEmailId())) {
+            query += " and Email='" + mcertificationAction.getEmailId() + "'";
+            System.out.println("----cemail----" + mcertificationAction.getEmailId());
+        }
+        System.out.println("---getMcertResult---" + query);
+
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                generalVTO = new GeneralVTO();
+
+
+                generalVTO.setId(resultSet.getInt("Id"));
+                //  generalVTO.setDATE(DateUtility.getInstance().convertToviewFormat(resultSet.getDate("DATE").toString()));
+                generalVTO.setCollegeName(resultSet.getString("CollegeName"));
+                generalVTO.setConsultentname(resultSet.getString("FName"));
+
+                generalVTO.setEmail(resultSet.getString("Email"));
+
+                mcertResList.add(generalVTO);
+
+            }
+
+            int mcertId = DataSourceDataProvider.getInstance().getMcertIdByActualId(mcertificationAction.getConsultantId());
+            System.out.println("--mcert id----" + mcertId);
+            String queryString = "SELECT tblMcertResult.ExamKeyId AS examKeyId,tblMcertResult.EmpId AS empId,Marks,TotalQuestions,AttemptedQuestions,"
+                    + "DateSubmitted,ExamStatus,tblMcertKey.ExamTypeId,tblMcertSetExam.ExamType AS examType FROM tblMcertResult LEFT JOIN tblMcertKey "
+                    + "ON tblMcertKey.ID=tblMcertResult.ExamKeyId LEFT JOIN tblMcertSetExam  ON tblMcertSetExam.Id=tblMcertKey.ExamTypeId "
+                    + "WHERE tblMcertResult.EmpId = 'MSSMCERT" + mcertId + "' AND tblMcertKey.ExamTypeId=" + mcertificationAction.getTopicId();
+
+            connection1 = ConnectionProvider.getInstance().getHubbleDbConnection();
+            preparedStatement1 = connection1.prepareStatement(queryString);
+            System.out.println("-hubb query----" + queryString);
+            resultSet1 = preparedStatement1.executeQuery();
+            while (resultSet.next()) {
+                generalVTO = new GeneralVTO();
+                generalVTO.setEmpId(resultSet.getInt("empId"));
+                generalVTO.setExamType(resultSet.getString("examType"));
+                generalVTO.setMarks(resultSet.getInt("Marks"));
+                generalVTO.setTotalQuestions(resultSet.getInt("TotalQuestions"));
+                generalVTO.setAttemptedQuestions(resultSet.getInt("AttemptedQuestions"));
+                generalVTO.setDateSubmitted(resultSet.getString("DateSubmitted"));
+                generalVTO.setStatus(resultSet.getString("ExamStatus"));
+                generalVTO.setExamKeyId(resultSet.getInt("examKeyId"));
+                System.out.println("--hub--" + resultSet.getInt("empId") + "" + resultSet.getString("examType") + "" + resultSet.getInt("Marks"));
+                System.out.println("--hub--" + resultSet.getInt("TotalQuestions") + "" + resultSet.getInt("AttemptedQuestions") + "" + resultSet.getString("ExamStatus"));
+                System.out.println("--hub--" + resultSet.getInt("examKeyId") + "" + resultSet.getString("DateSubmitted"));
+                mcertConResList.add(generalVTO);
+            }
+            for (Iterator iterator = mcertConResList.iterator(); iterator.hasNext();) {
+                //  GeneralVTO generalVTO = new GeneralVTO();
+
+                generalVTO = (GeneralVTO) iterator.next();
+                System.out.println("outer loop->" + generalVTO.getId());
+                for (Iterator<GeneralVTO> iterator1 = mcertResList.iterator(); iterator1.hasNext();) {
+                    GeneralVTO next = iterator1.next();
+                    if (generalVTO.getId() == next.getEmpId()) {
+                        //  System.out.println("inner loop if->" + generalVTO.getUserId());
+                        GeneralVTO generalVTO1 = (GeneralVTO) iterator1.next();
+                        generalVTO.setEmpId(generalVTO1.getEmpId());
+                        System.out.println("-id--" + generalVTO1.getEmpId());
+                        fnlList.add(generalVTO);
+                    }
+                }
+
+            }
+
+
+        } catch (SQLException sqle) {
+            throw new ServiceLocatorException(sqle);
+        } finally {
+            try {
+                if (resultSet != null) {
+
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                    preparedStatement = null;
+                }
+
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException sql) {
+                //System.err.print("Error :"+sql);
+            }
+
+        }
+        //  return mcertResList;
+        return fnlList;
+    }

@@ -1,0 +1,452 @@
+CALL  spUpdateWorkshopCandidateType(@outResponse)
+
+SELECT  @outResponse
+
+****************db changes***************
+tblEnrolledWorkshopTopics----workshopCandidateType
+tblRegistrationDetails---------CoachNames
+
+spWorkshopTree
+spUpdateWorkshopCandidateType
+*******************
+coach list added to editregistration page in admin role
+DSDP
+------
+public Map getCoachNames() throws ServiceLocatorException {
+          System.out.println("--enter into---getCoachNames---");
+        Map coachList = new HashMap();
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+        connection = ConnectionProvider.getInstance().getConnection();
+        String queryString = "SELECT Id,NAME FROM tblCoachDetails";
+        try {
+             System.out.println("coach--->"+queryString);
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery(queryString);
+            while (resultSet.next()) {
+                //  System.out.println("--->"+resultSet.getInt("StateId"));
+                coachList.put(resultSet.getInt("Id"), resultSet.getString("NAME"));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        } finally {
+
+            try {
+                // resultSet Object Checking if it's null then close and set null
+                if (resultSet != null) {
+                    resultSet.close();
+                    resultSet = null;
+                }
+
+                if (statement != null) {
+                    statement.close();
+                    statement = null;
+                }
+
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException ex) {
+                throw new ServiceLocatorException(ex);
+            }
+        }
+        return coachList;
+    }
+
+RegistrationDetailsEditPage.jsp
+-------------------------------
+ <div class="row">
+                                    <div class="col-sm-4" >
+                                        <div class="form-group" >
+                                            Coach :
+                                        </div>
+                                        <div class="form-group" >
+                                         
+                                            <s:select multiple="true" name="coach" cssClass="" id="coach" list="coachMap" value="%{selectedCoachList}" onchange="borderCssChange(this);fieldLengthValidator(this);"/>
+                                            
+                                        </div>
+                                    </div> 
+                                     <s:hidden name="coachId" id="coachId"/>       
+                                </div>  
+
+<link href="../css/selectivity.min.css" rel="stylesheet" type="text/css">
+<script type="text/JavaScript" src="<s:url value="/js/selectivity.min.js"/>"></script>
+   $('#coach').selectivity({
+                 
+                    multiple: true,
+                    placeholder: 'Type to search a coach'
+                }); 
+
+RegistrationAction.java
+--------------------------
+private List selectedCoachList;
+private String coachId;
+ private Map coachMap;
+editRegidtrationDetails()
+-------------------------
+coachMap = DataSourceDataProvider.getInstance().getCoachNames();
+CoachNames
+
+ List list1 = new ArrayList();
+                    if (getGeneralVTO().getCoachNames() != null && !"".equals(getGeneralVTO().getCoachNames())) {
+                        StringTokenizer coachString = new StringTokenizer(getGeneralVTO().getCoachNames(), ",");
+                        // String reqSkillsResultString = "";
+
+
+                        while (coachString.hasMoreTokens()) {
+                            list1.add(coachString.nextToken());
+                        }
+                    }
+
+                    setSelectedCoachList(list1);
+
+Generalserviceimpl
+--------------------
+editRegidtrationDetails()
+----------------------------
+generalVTO.setCoachNames(resultSet.getString("CoachNames"));
+generalvto
+---------
+private String coachNames;
+
+updateRegistrationDetails()
+--------------------------
+,CoachNames='" + registrationAction.getCoachId() + "'
+
+DB changes
+--------------
+create colmn---registrationDetails---CoachNames---varchar--15
+************************
+
+insertRegDetails()--generalservceimpl------to get mails in lower case
+
+enrollCollegeDetails()---generalServiceimpl------to get mails in lower case
+
+
+insertRegisterCoachDetails---generalServiceImpl
+
+editRegidtrationDetails---generalserviceimpl
+
+updateRegistrationDetails---generalserviceimpl
+
+editCoachDetils---Ajaxhandlerserviceimpl
+
+getAddCoachDet----ajaxhandlerserviceimpl
+
+
+***********************
+DashboardImpl ---->to get date and time in order formate in the workshop of curriculum of add/edit functionality.
+---------------
+getCurrcullamAddTopicsData()
+--------------------------------
+DATE,STR_TO_DATE(tblCurriculam.DurationTime , '%h:%i %p')
+**************************************
+registrationAction--------->to get only not enrollrd college map in the college list in faculty registration.
+-------------------
+enrollCollege() 
+--------------
+collegeMap = DataSourceDataProvider.getInstance().getAlreadyEnrolledCollegeNames();
+DSDP
+-------
+ public Map getAlreadyEnrolledCollegeNames() throws ServiceLocatorException {
+           System.out.println("********************DataSourceDataProvider :: getAlreadyEnrolledCollegeNames Method Start*********************");
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+        String queryString = "";
+        Map enrolledCollegeNameMap = new LinkedHashMap();
+        connection = ConnectionProvider.getInstance().getConnection();
+        //queryString = "SELECT CollegeName,CollegeCode FROM tblEnrollCollegeDetails ORDER BY CollegeName ASC";
+        queryString = "SELECT Id,CollegeName FROM tblLKCollegesList WHERE Id NOT IN(SELECT CollegeName FROM tblEnrollCollegeDetails)";
+        
+        
+          System.out.println("getAlreadyEnrolledCollegeNames :: query string ------>" + queryString);
+        try {
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery(queryString);
+            while (resultSet.next()) {
+                enrolledCollegeNameMap.put(resultSet.getInt("Id"), resultSet.getString("CollegeName"));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                // resultSet Object Checking if it's null then close and set null
+                if (resultSet != null) {
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (statement != null) {
+                    statement.close();
+                    statement = null;
+                }
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException ex) {
+                throw new ServiceLocatorException(ex);
+            }
+        }
+        //  System.out.println("********************DataSourceDataProvider :: getCountryNames Method End*********************");
+        return enrolledCollegeNameMap;
+    }
+
+ 
+**************************************************************
+ coach details
+  ---------------
+Registercoachsearch.jsp----removing +91 in the phnum column in add and edit functity in coach details.
+-----------------------
+ <s:textfield name="phoneNumber" cssClass="form-control" id="updatephoneNumber" value="" onchange="borderCssChange(this);return formatPhone(this);" onblur="return validatenumber(this);" onkeypress="return isNumberKey(event)" />
+
+ <s:textfield name="phoneNumber" cssClass="form-control" id="phoneNumber"  onchange="borderCssChange(this);return formatPhone(this);" onblur="return validatenumber(this);" onkeypress="return isNumberKey(event)" />
+
+ajaxutil.js
+---------
+getAddCoachDet()
+--------------------
+status!="-1"
+document.getElementById('resultMessg').className='alert alert-danger';
+
+editCoachDetils()
+------------------
+document.getElementById('resultMessg1').className='alert alert-success'; 
+document.getElementById('resultMessg1').className='alert alert-danger';	
+****************************************
+Dashboardimpl --------->to get date in desc order in admin and student role at workshop.
+------------------------
+getWorkshopAddDetails()
+---------------------------
++ " ORDER BY tblWorkshop.DATE DESC ";
+
+getDashBoardDetails()
+-------------------------
++ " ORDER BY  tblWorkshop.DATE DESC ";
+********************
+RegisterCoachDetails    ---->to get current date when details modified in modified date.
+---------------------
+Ajaxhandlerserviceimpl
+-----------------------
+editCoachDetils()
+--------------------
+ pstatement.setTimestamp(9, DateUtility.getInstance().getCurrentMySqlDateTime());
+***********************
+admin role--->college list--->
+DashboardACtion
+--------------------
+leftMenuCollege()
+------------------
+getId(),
+DashbpardService
+------------------
+int id,
+DashboardServiceImpl
+-----------------------
+int id,
+select Id
+generalVTO.setId(resultSet.getInt("Id"));
+
+collegeListActivation.jsp
+------------------------
+editcollegedet
+---------------
+,'<s:property value="id"/>'
+<s:hidden name="id" id="id" value="%{generalVTO.id}"/> 
+
+ajaxutil.js
+----------
+setCollegeDet(id)
+document.getElementById("id").value=id;
+editCollegeDet()
+----------------
+var id=document.getElementById("id").value;
++'&id='+id,
+
+                                                          
+AjaxACtion																	
+-----------                                                             
+editCollegeDet()                                          
+-----------------------
+getId(),
+Ajaxservice
+---------------
+int id,
+Ajaxserviceimpl
+-------------------
+int id,
+Id=?--------------?pstatement.setInt(6, id);
+**************************************
+
+
+
+
+****************
+workshopdetailsAdd.jsp
+--------------------
+<link  rel="stylesheet" href="//cdn.datatables.net/1.10.12/css/jquery.dataTables.min.css">
+
+RegistrationDetailsEditPage.jsp
+-------------------------------
+getCollegeCode();
+ <s:textfield cssClass="form-control"  id="collegeid" name="collegeid"  value="%{generalVTO.collegeid}" onchange="borderCssChange(this);fieldLengthValidator(this);"/>
+
+GeneralVTO.java
+---------------
+private String collegeid;
+
+Generalserviceimpl
+-------------------
+editRegidtrationDetails()
+---------------------------
+setCollegeid
+
+updateRegistrationDetails()
+---------------------------
+getCollegeid
+
+
+					*****************Reset User Password**********************
+leftmenu.jsp
+------------
+<li><a href="<%=request.getContextPath()%>/general/resetUserPassword.action" >Reset&nbsp;User&nbsp;Password</a></li>
+
+ResetUserpasswor.jsp
+--------------------
+full has to copy
+
+validation.js
+-------------
+//reset user pwd
+function resetuserPwd(){  
+  
+    var cofirmPwd = document.resetForm.confirmPassword.value;
+    var newPassword = document.resetForm.newPassword.value;
+    var userId = document.resetForm.userId.value;
+    if(cofirmPwd=="" || cofirmPwd==null || newPassword=="" || newPassword==null || userId=="" || userId==null){
+    
+        // alert("Enter Details");
+        showAlertModal("Please enter all details ");
+        return (false);
+    }else if(newPassword != cofirmPwd){     
+        showAlertModal("password not matched!");
+        //        alert("password not matched!");
+        document.resetForm.newPassword.value = '';
+        document.resetForm.confirmPassword.value = '';
+        return (false);
+    }else {
+        return (true);
+    }
+}
+
+fieldlengthvalidator
+-------------------
+|| element.id=="userId"-------60
+
+general.xml
+-----------
+ <action name="resetUserPassword" >              
+ <result>/ResetUserPassword.jsp</result>
+ </action>
+
+<action name="resetUserPasswordSubmit" class="com.mss.apcloud.general.PasswordAction" method="resetUserPassword">
+<result name="success" >/ResetUserPassword.jsp</result>      
+<result type="redirect" name="login">/login.action</result>
+</action> 
+
+PasswordAction.java
+-------------------
+private String userId;
+
+ //reset user password 
+    public String resetUserPassword() throws Exception {
+        System.out.println("----reset user pwd action---------");
+        try {
+            resultType = LOGIN;
+            if (httpServletRequest.getSession(false).getAttribute(AppConstants.SESSION_EMAIL) != null) {
+                String resultMsg = ServiceLocator.getGeneralService().updateUserPassword(this);
+                if ("updated".equals(resultMsg)) {//isReset                         
+                    getHttpServletRequest().setAttribute(AppConstants.RESULT_MESSAGE, "<div class=\"row\"> <div class=\"alert alert-success\"  style=\"width: 580px;\"><a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a><strong>Congrats! You have changed your password succesfully ! </strong> </div></div>");
+
+                } else {
+                    getHttpServletRequest().setAttribute(AppConstants.RESULT_MESSAGE, "<div class=\"row\"> <div class=\"alert alert-danger\" style=\"width: 580px;\"><a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a><strong>email not existed </strong> </div></div>");
+                }
+                resultType = SUCCESS;
+            }
+        } catch (Exception ex) {
+            httpServletRequest.getSession(false).setAttribute("errorMessage", ex.toString());
+            resultType = ERROR;
+        }
+        return resultType;
+
+    }//end of the resetuserPassword() method
+
+GeneralService
+--------------
+//reset user password
+public String updateUserPassword(PasswordAction passwordAction) throws ServiceLocatorException;
+
+GeneralServiceImpl
+------------------
+  //reset user passsword
+    public String updateUserPassword(PasswordAction passwordAction) throws ServiceLocatorException {
+        System.out.println("==update user Password==" + passwordAction.getUserId());
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+        String queryString = null;
+        // String result = "notExist";
+        String resultMsg = "";
+
+        PasswordUtility passwordUtility = new PasswordUtility();
+         try {
+            String status = DataSourceDataProvider.getInstance().isEmailExists(passwordAction.getUserId());
+
+            connection = ConnectionProvider.getInstance().getConnection();
+            //statement = connection.createStatement();
+          
+            /*here checking weather email exist or not ,if it exit the update will be done.*/
+            if ("nodata".equalsIgnoreCase(status)) {
+                resultMsg = "EmailNotExist";
+            } else {
+                System.out.println("----in iffffff-----");
+                String encryptPass = passwordUtility.encryptPwd(passwordAction.getNewPassword());
+                queryString = "UPDATE tblRegistrationDetails SET Password='" + encryptPass + "' WHERE Email='" + passwordAction.getUserId() + "'";
+                System.out.println("queryString-->" + queryString);
+                statement = connection.createStatement();
+                statement.executeUpdate(queryString);
+                System.out.println("updatedRows-->");
+                resultMsg = "updated";
+            }
+
+        } catch (SQLException se) {
+            throw new ServiceLocatorException(se);
+        } finally {
+            try {
+                if (resultSet != null) {
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (statement != null) {
+                    statement.close();
+                    statement = null;
+                }
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException se) {
+                throw new ServiceLocatorException(se);
+            }
+        }
+        return resultMsg;
+
+    }	
+***************************************end of  Reset User Password**************************************************************
+						
+
+						
+  
+         

@@ -1,0 +1,84 @@
+DELIMITER $$
+
+USE `apcloud`$$
+
+DROP PROCEDURE IF EXISTS `spGetWorshopStatistics_1`$$
+
+CREATE DEFINER=`AppCloud`@`%` PROCEDURE `spGetWorshopStatistics_1`(
+	
+	
+	OUT CollegeNames VARCHAR(1000),
+	OUT TopicNames VARCHAR(1000),
+	OUT CountList VARCHAR(1000)
+    )
+BEGIN  
+	DECLARE done INT DEFAULT 0;
+	
+	DECLARE v_CollegeName VARCHAR(100);
+	DECLARE v_TopicNames VARCHAR(100);
+	DECLARE v_TopicNames1 VARCHAR(1000);
+	DECLARE v_WorkShopCode VARCHAR(20);
+	DECLARE v_CountList1 VARCHAR(100);
+	DECLARE v_CompanyOrCollegeName VARCHAR(100);	
+	DECLARE v_CountList INT;
+	DECLARE Cur1 CURSOR FOR SELECT tblLKCollegesList.CollegeName,tblWorkshop.CollegeName AS CompanyOrCollegeName,tblWorkshop.CODE  FROM tblWorkshop LEFT JOIN tblLKCollegesList ON (tblWorkshop.CollegeName=tblLKCollegesList.id);
+	
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+	
+	OPEN Cur1;
+	
+	REPEAT
+		FETCH Cur1 INTO 
+		v_CollegeName,
+		v_CompanyOrCollegeName,
+		v_WorkShopCode;
+		SET v_TopicNames1=NULL;
+		SET v_CountList1=NULL;
+	IF NOT done THEN
+			
+		IF v_CollegeName IS NOT NULL THEN 
+	
+		SET v_CollegeName=CONCAT('(',v_WorkShopCode,') ',v_CollegeName);
+		SET CollegeNames   = CONCAT_WS('|',CollegeNames,v_CollegeName);
+		
+		END IF;
+	
+		IF v_CollegeName IS NULL THEN 
+	
+		SET v_CompanyOrCollegeName=CONCAT('(',v_WorkShopCode,') ',v_CompanyOrCollegeName);
+		SET CollegeNames   = CONCAT_WS('|',CollegeNames,v_CompanyOrCollegeName);
+		
+		END IF;
+		BLOCK2: BEGIN
+			DECLARE done2 INT DEFAULT 0;
+			
+			DECLARE Cur2 CURSOR FOR SELECT tblLKTopics.TopicName ,COUNT(tblEnrolledWorkshopTopics.enrollTopics) FROM tblEnrolledWorkshopTopics JOIN tblLKTopics ON (tblEnrolledWorkshopTopics.enrollTopics = tblLKTopics.id) WHERE workshopCode = v_WorkShopCode GROUP BY tblEnrolledWorkshopTopics.enrollTopics;
+	
+				DECLARE CONTINUE HANDLER FOR NOT FOUND SET done2 = 1;
+				OPEN Cur2;
+	
+			REPEAT
+				FETCH Cur2 INTO 
+					v_TopicNames,
+					v_CountList;
+			IF NOT done2 THEN
+				SET v_TopicNames1   = CONCAT_WS('^',v_TopicNames1,v_TopicNames);
+				SET v_CountList1  = CONCAT_WS('^',v_CountList1,v_CountList);
+			END IF;
+			UNTIL done2 END REPEAT;	
+			
+			CLOSE Cur2;
+		
+		END BLOCK2;
+		-- IF(LENGTH(`v_CountList1`),`v_CountList1`,' ')
+		SET TopicNames   = CONCAT_WS('|',TopicNames,IF(LENGTH(`v_TopicNames1`),`v_TopicNames1`,'no data'));
+		SET CountList   = CONCAT_WS('|',CountList,IF(LENGTH(`v_CountList1`),`v_CountList1`,'no data'));
+		
+	END IF;
+	
+	UNTIL done END REPEAT;	
+	CLOSE Cur1;
+	
+    END$$
+
+DELIMITER ;

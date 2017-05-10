@@ -1,0 +1,27 @@
+Deploying war file in tomcat
+----------------------------
+1)Go to tomcat installation folder structure i.e in windows it is program files and in linux it is otp.
+2)then go to C:\Program Files\Apache Software Foundation\Apache Tomcat 7.0.27\webapps
+3) In webapps we can paste our application.
+4)If we want to upload our application through browser then give ip address of your system(i.e go to cmd prompt and
+give ipconfig you will get ip address) then paste ip in address bar of browser with port number and click enter.
+5)then it will open ApacheFoundation page.
+6)then click on manager button to upload your apps for that  u have to give username and pwd.
+7)uname and pwd get in C:\Program Files\Apache Software Foundation\Apache Tomcat 7.0.27\conf\tomcatuser.xml
+8)copy username and pwd in Apache browser page and go to deploy ment process.
+9)we can deploy only war files.
+10)that war files is there in our application folder structure we have dist in that we have war files from that we can upload 
+our application in tomcat server.
+
+problem
+--------
+1)deault we have file size (52428800 size) in our C:\Program Files\Apache Software Foundation\Apache Tomcat 7.0.27\webapps\manager\WEB-INF , in webinf folder web.xml file.
+2)so,if we give 60 size app it will dificult to upload a file.
+3)so,we have sol.
+
+fix
+----
+1)Go to C:\Program Files\Apache Software Foundation\Apache Tomcat 7.0.27\webapps\manager\WEB-INF
+2)from that web.xml file we can change our size either increase or  dcrease.
+3)so,directly we can upload applications easily.
+

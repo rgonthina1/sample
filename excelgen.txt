@@ -1,0 +1,314 @@
+jsp
+----
+enrollCollegeListActivation.jsp
+----------------------------------
+ <s:hidden name="gridDownload" id="gridDownload" value="%{gridDownload}"/> 
+ 
+  <div class="col-sm-1" style="margin-left: 4px">
+                                        <div onclick="generateExportExcelSheet()"  class="btn btn-primary col-sm-0">&nbsp;ExportToExcel</div>
+                                    </div>
+
+
+
+									
+	<script>
+            function generateExportExcelSheet(){
+                var exportExcelSheet;
+                var gridDownload=document.getElementById('gridDownload').value; //gridDownload
+              //  alert(gridDownload);
+                var url= "exportEnrollExcelSheet.action?gridDownload="+gridDownload+"&exportExcelSheet="+exportExcelSheet; 
+    
+               // alert(url);
+                window.location=url;
+                    
+            }
+        </script>
+
+general.xml
+----------
+
+ <action name="exportEnrollExcelSheet" class="com.mss.apcloud.DashBoard.DashBoardAction"  method="exportEnrollExcelSheet">
+            </action>		
+DSDP
+-----									
+public String getGridData(String query) throws ServiceLocatorException{
+      //  System.out.println("********************DataSourceDataProvider :: getGridData Method Start*********************");
+      
+		Connection connection = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+    
+        String resultString = "";
+        
+        
+      //  System.out.println("getGridData :: query string ------>" + query);
+        
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery(query);
+                    
+            
+                    resultString = "Sno" + "|" + "College Code " + "|" + "College Name" + "|" + " Code 	" + "|" + " Location " + "|" + "Web Site " + "|" + "Faculty" + "|" + "Student1" + "|" + "Student2" + "|" + "Student3" + "|" + "Student4" +"^";
+               
+                 
+                while (resultSet.next()) {
+                   
+                        resultString += resultSet.getString("id") + "|"
+                                + resultSet.getString("CollegeCode") + "|"
+                                + resultSet.getString("CollegeName") + "|"
+                                + resultSet.getString("Code") + "|"
+                                + resultSet.getString("Location") + "|"
+                                + resultSet.getString("Website") + "|"
+                                + getFacultyGridData(resultSet.getString("collegeId") )+ "^";
+                             
+                            //  getFacultyGridData(); 
+                        
+                         
+                   
+                }
+                
+                
+            }
+         catch (SQLException ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                // resultSet Object Checking if it's null then close and set null
+                if (resultSet != null) {
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (statement != null) {
+                    statement.close();
+                    statement = null;
+                }
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException ex) {
+                throw new ServiceLocatorException(ex);
+            }
+        }
+      //  System.out.println("********************DataSourceDataProvider :: getGridData Method End*********************");
+        return resultString;
+    }
+
+      
+      //new 
+	  public String getFacultyGridData(String collegeId) throws ServiceLocatorException{
+      //  System.out.println("********************DataSourceDataProvider :: getFacultyGridData Method Start*********************");
+      
+		Connection connection = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+    
+        String resultString = "";
+        
+        
+        
+        try {
+            connection = ConnectionProvider.getInstance().getConnection();
+            
+             String query = "SELECT tblEnrollCollegeDetails.FacultyName,tblEnrollCollegeDetails.Fac_PhoneNum,tblEnrollCollegeDetails.Fac_Email,"
+                + "tblEnrollCollegeDetails.Student1Name,tblEnrollCollegeDetails.Student1Email,tblEnrollCollegeDetails.Student1Branch,"
+                + "tblEnrollCollegeDetails.Student1Year,tblEnrollCollegeDetails.Student1PhoneNum,tblEnrollCollegeDetails.Student2Name,"
+                + "tblEnrollCollegeDetails.Student2Email, tblEnrollCollegeDetails.Student2PhoneNum,tblEnrollCollegeDetails.Student2Branch,"
+                + "tblEnrollCollegeDetails.Student2Year,tblEnrollCollegeDetails.Student3Name,tblEnrollCollegeDetails.Student3Email,"
+                + "tblEnrollCollegeDetails.Student3PhoneNum,tblEnrollCollegeDetails.Student3Branch,tblEnrollCollegeDetails.Student3Year,"
+                + "tblEnrollCollegeDetails.Student4Name,tblEnrollCollegeDetails.Student4Email,tblEnrollCollegeDetails.Student4Branch,"
+                + "tblEnrollCollegeDetails.Student4Year,tblEnrollCollegeDetails.Student4PhoneNum,tblLKCollegesList.CollegeName "
+                + "FROM tblEnrollCollegeDetails JOIN  tblLKCollegesList ON (tblEnrollCollegeDetails.CollegeName=tblLKCollegesList.id)"
+                + " WHERE tblEnrollCollegeDetails.CollegeName ='" + collegeId+"'";
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery(query);
+            
+         //   System.out.println("getFacultyGridData :: query string ------>" + query);
+                    
+            
+                //  resultString = "Sno" + "|" + "College Code " + "|" + "College Name" + "|" + " Code " + "|" + " Location " + "|" + "Web Site " + "|" + "Ambassadors" + "^";
+               
+                 
+                while (resultSet.next()) {
+                   
+                        resultString += resultSet.getString("FacultyName") + ","
+                                + resultSet.getString("Fac_PhoneNum") + ","
+                                + resultSet.getString("Fac_Email") + ","+"|"
+                                + resultSet.getString("Student1Name") + ","
+                                + resultSet.getString("Student1PhoneNum") + ","
+                                + resultSet.getString("Student1Email") + ","
+                                + resultSet.getString("Student1Branch") + ","
+                                + resultSet.getString("Student1Year") + "." +"|"
+                                + resultSet.getString("Student2Name") + ","
+                                + resultSet.getString("Student2PhoneNum") + ","
+                                + resultSet.getString("Student2Email") + ","
+                                + resultSet.getString("Student2Branch") + ","
+                                + resultSet.getString("Student2Year") + "."+"|" 
+                                + resultSet.getString("Student3Name") + ","
+                                + resultSet.getString("Student3PhoneNum") + ","
+                                + resultSet.getString("Student3Email") + ","
+                                + resultSet.getString("Student3Branch") + ","
+                                + resultSet.getString("Student3Year") + "."+"|"
+                                + resultSet.getString("Student4Name") + ","
+                                + resultSet.getString("Student4PhoneNum") + ","
+                                + resultSet.getString("Student4Email") + ","
+                                + resultSet.getString("Student4Branch") + ","
+                                + resultSet.getString("Student4Year") + "^";
+                                 
+                        
+                         
+                   
+                }
+            }
+         catch (SQLException ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                // resultSet Object Checking if it's null then close and set null
+                if (resultSet != null) {
+                    resultSet.close();
+                    resultSet = null;
+                }
+                if (statement != null) {
+                    statement.close();
+                    statement = null;
+                }
+                if (connection != null) {
+                    connection.close();
+                    connection = null;
+                }
+            } catch (SQLException ex) {
+                throw new ServiceLocatorException(ex);
+            }
+        }
+            System.out.println("resultString in fgetFacultyGridData"+resultString);
+       // System.out.println("********************DataSourceDataProvider :: getFacultyGridData Method End*********************");
+        return resultString;
+    }
+
+DashboardAction
+----------------
+**********************jxl jar has to be add
+//new
+ import jxl.Workbook;
+import jxl.format.Colour;
+import jxl.read.biff.BiffException;
+import jxl.write.Label;
+import jxl.write.WritableCellFormat;
+import jxl.write.WritableFont;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+import jxl.write.WriteException;
+
+	
+	private String gridDownload;
+	
+	
+	 private String exportExcelSheet;  
+   private String gridFauDownload; 
+
+   
+public String exportEnrollExcelSheet() throws IOException, WriteException, BiffException, ServiceLocatorException {
+       // System.out.println("********************RecruitmentAjaxHandlerAction :: doDownloadXlsResults() Action Start*********************");
+        String filename = "getExportExcelSheet";
+        
+       // System.out.println("getGridDownload-->"+getGridDownload());
+       
+        filename = filename.concat(".xls");
+        OutputStream out = null;
+        httpServletResponse.setContentType("application/vnd.ms-excel");
+        httpServletResponse.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+        int count;
+        WritableWorkbook wworkbook; 
+        wworkbook = Workbook.createWorkbook(httpServletResponse.getOutputStream());
+        WritableSheet wsheet = wworkbook.createSheet("First Sheet", 0);
+        Label label;
+        if (!"".equals(getGridDownload())) {
+            String data = DataSourceDataProvider.getInstance().getGridData(getGridDownload());
+          
+            
+           // System.out.println("---------data---------"+data);
+            setGridDownload(data);
+           
+            WritableFont cellFont = new WritableFont(WritableFont.TIMES, 12);
+            cellFont.setColour(Colour.BLACK);
+
+            WritableCellFormat cellFormat = new WritableCellFormat(cellFont);
+            cellFormat.setBackground(Colour.LIGHT_BLUE);
+        
+            String[] s = getGridDownload().split(Pattern.quote("^"));
+            for (int i = 0; i < s.length; i++) {
+               
+                String ss = s[i];
+                String[] inner = ss.split(Pattern.quote("|"));
+            
+                for (int j = 0; j < inner.length; j++) {
+                   
+                    if (i == 0) {
+                        label = new Label(j, i, inner[j], cellFormat);
+                        wsheet.addCell(label);
+                    } else {
+                        label = new Label(j, i, inner[j]);
+                        wsheet.addCell(label);
+                    }
+                }
+            }
+        }
+        wworkbook.write();
+        wworkbook.close();
+        if (out != null) {
+            out.close();
+        }
+    //     System.out.println("********************RecruitmentAjaxHandlerAction :: doDownloadXlsResults() Action End*********************");
+        return null;
+    }	
+     
+	 
+	 enrollLeftMenuCollege()--this---DashBoardAction dashBoardAction--
+	 
+	 impl---->dashBoardAction.setGridDownload(query);
+	 
+	 
+	 
+	 validation
+	 -----------------
+	 validation.js
+----------------
+
+function IsValidPassword(element)
+{
+    
+    var password=element.value;
+    
+    var password = password.replace(/ /g, "");
+    alert("space not allowed");
+    document.getElementById("password").value=password;
+   
+   
+}
+
+registration-form.jsp
+---------------------
+?version=1.0
+return IsValidPassword(this)
+
+
+
+collegeListActivation.js
+------------------------
+<script>
+            function isUrlEdit(obj) {
+                var  url_validate = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+                if(!url_validate.test(obj.value)){
+    
+                    document.getElementById("resultMessg1").style.display='block';
+                    document.getElementById("editCollegemessg1").innerHTML='<div class="cal-sm-3">  Invalid Url</div>';
+                    alert("invalid url----")
+                    obj.value = '';
+                }
+            }
+        </script>
+		
+		
+		onchange="isUrlEdit(this);"
